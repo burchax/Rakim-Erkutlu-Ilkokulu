@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Okul İdareci Paneli</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-100 font-sans text-gray-800 min-h-screen flex flex-col">
+
+    <!-- Üst Header & Navigasyon -->
+    <header class="bg-indigo-900 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 class="text-xl font-bold flex items-center gap-2">
+                <i class="fa-solid fa-user-shield text-amber-400"></i> İdareci Paneli
+            </h1>
+            
+            <!-- Gizli Menü (⋮) -->
+            <div class="relative">
+                <button id="menuBtn" onclick="toggleMenu()" class="p-2 text-2xl hover:bg-indigo-800 rounded-lg transition">
+                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                </button>
+
+                <div id="dropdownMenu" class="hidden absolute right-0 mt-2 w-64 bg-white text-gray-800 rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
+                    <div class="py-1">
+                        <button onclick="eksikKontrolu()" class="w-full text-left px-4 py-3 hover:bg-indigo-50 flex items-center gap-3 text-sm font-semibold border-b">
+                            <i class="fa-solid fa-magnifying-glass text-indigo-600"></i> 1. Tek Tık Eksik / Bekleyen
+                        </button>
+                        <button onclick="arsivle()" class="w-full text-left px-4 py-3 hover:bg-amber-50 flex items-center gap-3 text-sm font-semibold border-b">
+                            <i class="fa-solid fa-box-archive text-amber-600"></i> 2. Yılı Arşivle (Eylül-Ağustos)
+                        </button>
+                        <button onclick="veriYedekle()" class="w-full text-left px-4 py-3 hover:bg-emerald-50 flex items-center gap-3 text-sm font-semibold">
+                            <i class="fa-solid fa-database text-emerald-600"></i> 3. Veri Yedekleme & Aktar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modül Sekmeleri -->
+        <nav class="bg-indigo-800 text-sm font-medium flex justify-around max-w-5xl mx-auto border-t border-indigo-700/50">
+            <button onclick="switchTab('idariIsler')" id="tab-idariIsler" class="flex-1 py-3 px-2 text-center border-b-4 border-amber-400 font-bold bg-indigo-900/50 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-folder-open"></i> İdari İşler
+            </button>
+            <button onclick="switchTab('hatirlaticilar')" id="tab-hatirlaticilar" class="flex-1 py-3 px-2 text-center border-b-4 border-transparent hover:bg-indigo-700/50 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-bell"></i> Hatırlatıcılar
+            </button>
+            <button onclick="switchTab('personelTakip')" id="tab-personelTakip" class="flex-1 py-3 px-2 text-center border-b-4 border-transparent hover:bg-indigo-700/50 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-calendar-days"></i> Personel Devam
+            </button>
+        </nav>
+    </header>
+
+    <!-- Ana İçerik Alanı -->
+    <main class="max-w-5xl mx-auto w-full p-4 flex-grow">
+
+        <!-- 🟢 1. SEKME: İDARİ İŞLER TAKİBİ -->
+        <section id="sec-idariIsler" class="tab-content space-y-4">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col md:flex-row justify-between items-center gap-3">
+                <div class="relative w-full md:w-2/3">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-gray-400"></i>
+                    <input type="text" id="aramaKutusu" onkeyup="isleriFiltrele()" placeholder="Konu, EBYS sayısı veya açıklama ara..." class="w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-sm">
+                </div>
+                <button onclick="openModal('modalIsEkle')" class="w-full md:w-auto px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow transition flex items-center justify-center gap-2 text-sm">
+                    <i class="fa-solid fa-plus"></i> Yapılan İş / EBYS Ekle
+                </button>
+            </div>
+
+            <div id="islerListesi" class="space-y-3"></div>
+        </section>
+
+        <!-- 🟢 2. SEKME: KRİTİK HATIRLATICILAR -->
+        <section id="sec-hatirlaticilar" class="tab-content hidden space-y-4">
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex justify-between items-center">
+                <h2 class="font-bold text-gray-700 flex items-center gap-2 text-sm md:text-base">
+                    <i class="fa-solid fa-clock text-amber-500"></i> Süreli Evrak & Görev Takibi
+                </h2>
+                <button onclick="openModal('modalHatirlaticiEkle')" class="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium rounded-lg shadow transition flex items-center gap-2">
+                    <i class="fa-solid fa-plus"></i> Hatırlatıcı Ekle
+                </button>
+            </div>
+
+            <div id="hatirlaticiListesi" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+        </section>
+
+        <!-- 🟢 3. SEKME: PERSONEL DEVAM / DEVAMSIZLIK TAKİBİ -->
+        <section id="sec-personelTakip" class="tab-content hidden space-y-4">
+            <!-- Öğretmen Liste Yönetim Butonu -->
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex justify-between items-center">
+                <div class="text-sm font-bold text-gray-700 flex items-center gap-2">
+                    <i class="fa-solid fa-users text-indigo-600"></i> Öğretmen & Personel Kadrosu
+                </div>
+                <button onclick="openModal('modalKadroYonet')" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs md:text-sm font-medium rounded-lg shadow transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-user-gear"></i> Kadroyu Düzenle (Ekle/Sil)
+                </button>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                <div class="flex justify-between items-center mb-4">
+                    <button onclick="ayDegistir(-1)" class="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs md:text-sm text-gray-700 font-medium"><i class="fa-solid fa-chevron-left"></i> Önceki Ay</button>
+                    <h2 id="takvimAyYil" class="text-base md:text-lg font-bold text-indigo-900">Eylül 2026</h2>
+                    <button onclick="ayDegistir(1)" class="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg text-xs md:text-sm text-gray-700 font-medium">Sonraki Ay <i class="fa-solid fa-chevron-right"></i></button>
+                </div>
+
+                <div class="grid grid-cols-7 gap-1 text-center font-bold text-xs text-gray-500 mb-2">
+                    <div>Pzt</div><div>Sal</div><div>Çar</div><div>Per</div><div>Cum</div><div class="text-red-500">Cmt</div><div class="text-red-500">Paz</div>
+                </div>
+
+                <div id="takvimGunleri" class="grid grid-cols-7 gap-1 text-sm"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL: YENİ İŞ EKLE -->
+    <div id="modalIsEkle" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <h3 class="text-lg font-bold text-gray-800 border-b pb-2">Yeni Yapılan İş / EBYS Kaydı</h3>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">İş / Evrak Başlığı (Konu)</label>
+                <input type="text" id="inputIsBaslik" class="w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Örn: İSG Yıllık Planı Gönderildi">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">EBYS / Desi Sayısı ve Tarihi</label>
+                <input type="text" id="inputIsEbys" class="w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Örn: E-84123512-100-12345 (18.09.2026)">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Açıklama / Detay</label>
+                <textarea id="inputIsAciklama" rows="3" class="w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="İçerik, detaylar veya yapılan görüşme açıklamaları..."></textarea>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeModal('modalIsEkle')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium">İptal</button>
+                <button onclick="isEkle()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: HATIRLATICI EKLE -->
+    <div id="modalHatirlaticiEkle" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <h3 class="text-lg font-bold text-gray-800 border-b pb-2">Yeni Kritik Hatırlatıcı</h3>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Hatırlatıcı Başlığı</label>
+                <input type="text" id="inputHatirlaticiBaslik" class="w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none" placeholder="Örn: Kulüp Yıllık Planları Teslimi">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Son Teslim Tarihi</label>
+                <input type="date" id="inputHatirlaticiTarih" class="w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-amber-500 outline-none">
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeModal('modalHatirlaticiEkle')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium">İptal</button>
+                <button onclick="hatirlaticiEkle()" class="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: KADRO YÖNETİMİ (ÖĞRETMEN EKLE/SİL) -->
+    <div id="modalKadroYonet" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <h3 class="text-lg font-bold text-gray-800 border-b pb-2">Öğretmen / Personel Kadrosu</h3>
+            <div class="flex gap-2">
+                <input type="text" id="inputYeniOgretmen" class="flex-1 p-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Öğretmen Adı Soyadı...">
+                <button onclick="ogretmenEkle()" class="px-4 py-2 bg-emerald-600 text-white font-medium rounded-lg text-sm hover:bg-emerald-700">Ekle</button>
+            </div>
+            <div id="ogretmenListesiKadro" class="max-h-60 overflow-y-auto space-y-2 pt-2">
+                <!-- Kayıtlı öğretmenler JS ile buraya yüklenecek -->
+            </div>
+            <div class="flex justify-end pt-2">
+                <button onclick="closeModal('modalKadroYonet')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium">Kapat</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: PERSONEL İZİN/RAPOR EKLE -->
+    <div id="modalPersonelEkle" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <h3 class="text-lg font-bold text-gray-800 border-b pb-2" id="selectedDateTitle">İzin/Rapor Girişi</h3>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Öğretmen / Personel Seçin</label>
+                <select id="selectOgretmen" class="w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none bg-white">
+                    <!-- Kayıtlı isimler doldurulacak -->
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Durum Türü</label>
+                <select id="inputDurumTur" class="w-full p-2 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <option value="Raporlu">Raporlu</option>
+                    <option value="İzinli">İzinli</option>
+                    <option value="Sevkli">Sevkli</option>
+                    <option value="Görevli">Görevli / İzinli</option>
+                </select>
+            </div>
+            <div class="flex justify-end gap-2 pt-2">
+                <button onclick="closeModal('modalPersonelEkle')" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg text-sm font-medium">İptal</button>
+                <button onclick="personelEkle()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium">Kaydet</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JAVASCRIPT MANTIĞI -->
+    <script>
+        // LocalStorage Veri Yapıları
+        let isler = JSON.parse(localStorage.getItem('idare_isler')) || [];
+        let hatirlaticilar = JSON.parse(localStorage.getItem('idare_hatirlaticilar')) || [];
+        let devamsizlik = JSON.parse(localStorage.getItem('idare_devamsizlik')) || {};
+        let ogretmenler = JSON.parse(localStorage.getItem('idare_ogretmenler')) || [];
+
+        let suAnkiTarih = new Date(2026, 8, 1); // Eylül 2026 Varsayılan
+        let secilenGunStr = "";
+
+        // Sayfa Yüklendiğinde
+        window.onload = function() {
+            isleriListele();
+            hatirlaticilariListele();
+            takvimCiz();
+            kadroListele();
+        };
+
+        // Sekme Değiştirme
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('nav button').forEach(el => {
+                el.classList.remove('border-amber-400', 'font-bold', 'bg-indigo-900/50');
+                el.classList.add('border-transparent');
+            });
+
+            document.getElementById('sec-' + tabName).classList.remove('hidden');
+            const activeBtn = document.getElementById('tab-' + tabName);
+            activeBtn.classList.add('border-amber-400', 'font-bold', 'bg-indigo-900/50');
+            activeBtn.classList.remove('border-transparent');
+        }
+
+        // Gizli Menü Toggle
+        function toggleMenu() {
+            document.getElementById('dropdownMenu').classList.toggle('hidden');
+        }
+
+        window.onclick = function(event) {
+            if (!event.target.closest('#menuBtn')) {
+                document.getElementById('dropdownMenu').classList.add('hidden');
+            }
+        };
+
+        function openModal(id) { 
+            if(id === 'modalKadroYonet') kadroListele();
+            if(id === 'modalPersonelEkle') ogretmenDropdownDoldur();
+            document.getElementById(id).classList.remove('hidden'); 
+        }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+
+        // --- 1. İDARİ İŞLER MANTIĞI ---
+        function isEkle() {
+            const baslik = document.getElementById('inputIsBaslik').value.trim();
+            const ebys = document.getElementById('inputIsEbys').value.trim();
+            const aciklama = document.getElementById('inputIsAciklama').value.trim();
+
+            if (!baslik) return alert("Lütfen iş/evrak başlığını girin.");
+
+            isler.unshift({
+                id: Date.now(),
+                baslik: baslik,
+                ebys: ebys,
+                aciklama: aciklama,
+                mudurOnay: false,
+                tarih: new Date().toLocaleDateString('tr-TR')
+            });
+
+            localStorage.setItem('idare_isler', JSON.stringify(isler));
+            isleriListele();
+            closeModal('modalIsEkle');
+            document.getElementById('inputIsBaslik').value = '';
+            document.getElementById('inputIsEbys').value = '';
+            document.getElementById('inputIsAciklama').value = '';
+        }
+
+        function isleriListele(filtreliList = null) {
+            const list = filtreliList || isler;
+            const container = document.getElementById('islerListesi');
+            container.innerHTML = '';
+
+            if (list.length === 0) {
+                container.innerHTML = `<div class="bg-white p-8 text-center text-gray-400 rounded-xl border border-gray-200">Henüz kaydedilmiş bir idari iş bulunmuyor.</div>`;
+                return;
+            }
+
+            list.forEach(item => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-4 rounded-xl shadow-sm border border-gray-200 space-y-2 relative";
+                card.innerHTML = `
+                    <div class="flex justify-between items-start gap-2">
+                        <div>
+                            <h4 class="font-bold text-indigo-950 text-base">${item.baslik}</h4>
+                            ${item.ebys ? `<span class="inline-block bg-indigo-50 text-indigo-700 text-xs font-mono px-2 py-0.5 rounded mt-1 border border-indigo-100"><i class="fa-solid fa-hashtag"></i> ${item.ebys}</span>` : ''}
+                        </div>
+                        <label class="flex items-center gap-2 cursor-pointer bg-gray-50 hover:bg-gray-100 p-2 rounded-lg border border-gray-200 transition">
+                            <input type="checkbox" onchange="mudurOnayToggle(${item.id})" ${item.mudurOnay ? 'checked' : ''} class="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500">
+                            <span class="text-xs font-bold ${item.mudurOnay ? 'text-emerald-700' : 'text-gray-500'}">
+                                ${item.mudurOnay ? '<i class="fa-solid fa-check-double"></i> Müdür Gördü' : 'Müdür Onayı'}
+                            </span>
+                        </label>
+                    </div>
+                    ${item.aciklama ? `<p class="text-sm text-gray-600 bg-gray-50/50 p-2 rounded border border-gray-100">${item.aciklama}</p>` : ''}
+                    <div class="text-xs text-gray-400 flex justify-between items-center pt-1 border-t border-gray-100">
+                        <span>Kayıt Tarihi: ${item.tarih}</span>
+                        <button onclick="isSil(${item.id})" class="text-red-400 hover:text-red-600 text-xs"><i class="fa-solid fa-trash"></i> Sil</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function mudurOnayToggle(id) {
+            isler = isler.map(i => i.id === id ? {...i, mudurOnay: !i.mudurOnay} : i);
+            localStorage.setItem('idare_isler', JSON.stringify(isler));
+            isleriListele();
+        }
+
+        function isSil(id) {
+            if (confirm("Bu kaydı silmek istediğinize emin misiniz?")) {
+                isler = isler.filter(i => i.id !== id);
+                localStorage.setItem('idare_isler', JSON.stringify(isler));
+                isleriListele();
+            }
+        }
+
+        function isleriFiltrele() {
+            const query = document.getElementById('aramaKutusu').value.toLowerCase();
+            const s = isler.filter(i => 
+                i.baslik.toLowerCase().includes(query) || 
+                i.ebys.toLowerCase().includes(query) || 
+                i.aciklama.toLowerCase().includes(query)
+            );
+            isleriListele(s);
+        }
+
+        // --- 2. HATIRLATICI MANTIĞI ---
+        function hatirlaticiEkle() {
+            const baslik = document.getElementById('inputHatirlaticiBaslik').value.trim();
+            const tarih = document.getElementById('inputHatirlaticiTarih').value;
+
+            if (!baslik || !tarih) return alert("Lütfen başlık ve son teslim tarihini seçin.");
+
+            hatirlaticilar.push({
+                id: Date.now(),
+                baslik: baslik,
+                tarih: tarih,
+                tamamlandi: false
+            });
+
+            localStorage.setItem('idare_hatirlaticilar', JSON.stringify(hatirlaticilar));
+            hatirlaticilariListele();
+            closeModal('modalHatirlaticiEkle');
+            document.getElementById('inputHatirlaticiBaslik').value = '';
+            document.getElementById('inputHatirlaticiTarih').value = '';
+        }
+
+        function hatirlaticilariListele() {
+            const container = document.getElementById('hatirlaticiListesi');
+            container.innerHTML = '';
+
+            if (hatirlaticilar.length === 0) {
+                container.innerHTML = `<div class="col-span-2 bg-white p-8 text-center text-gray-400 rounded-xl border border-gray-200">Henüz tanımlanmış bir hatırlatıcı yok.</div>`;
+                return;
+            }
+
+            const bugün = new Date();
+            bugün.setHours(0,0,0,0);
+
+            hatirlaticilar.forEach(item => {
+                const hedefTarih = new Date(item.tarih);
+                const farkGun = Math.ceil((hedefTarih - bugün) / (1000 * 60 * 60 * 24));
+
+                let kartRenk = "bg-white border-gray-200";
+                let rozet = `<span class="bg-gray-100 text-gray-700 text-xs px-2 py-1 rounded font-bold">${item.tarih}</span>`;
+
+                if (item.tamamlandi) {
+                    kartRenk = "bg-emerald-50/60 border-emerald-300";
+                    rozet = `<span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 rounded font-bold"><i class="fa-solid fa-check"></i> Tamamlandı</span>`;
+                } else if (farkGun <= 0) {
+                    kartRenk = "bg-red-50 border-red-300";
+                    rozet = `<span class="bg-red-600 text-white text-xs px-2 py-1 rounded font-bold animate-pulse">Süresi Geldi / Geçti!</span>`;
+                } else if (farkGun <= 7) {
+                    kartRenk = "bg-amber-50 border-amber-300";
+                    rozet = `<span class="bg-amber-500 text-white text-xs px-2 py-1 rounded font-bold">Kalan: ${farkGun} Gün</span>`;
+                }
+
+                const card = document.createElement('div');
+                card.className = `p-4 rounded-xl border ${kartRenk} shadow-sm space-y-3 flex flex-col justify-between`;
+                card.innerHTML = `
+                    <div class="flex justify-between items-start gap-2">
+                        <h4 class="font-bold text-gray-800 text-sm md:text-base">${item.baslik}</h4>
+                        ${rozet}
+                    </div>
+                    <div class="flex justify-between items-center pt-2 border-t border-gray-200/50">
+                        <label class="flex items-center gap-2 cursor-pointer text-xs font-bold text-gray-700">
+                            <input type="checkbox" onchange="hatirlaticiTamamlaToggle(${item.id})" ${item.tamamlandi ? 'checked' : ''} class="w-4 h-4 text-emerald-600 rounded">
+                            Tamamlandı Olarak İşaretle
+                        </label>
+                        <button onclick="hatirlaticiSil(${item.id})" class="text-red-400 hover:text-red-600 text-xs"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function hatirlaticiTamamlaToggle(id) {
+            hatirlaticilar = hatirlaticilar.map(h => h.id === id ? {...h, tamamlandi: !h.tamamlandi} : h);
+            localStorage.setItem('idare_hatirlaticilar', JSON.stringify(hatirlaticilar));
+            hatirlaticilariListele();
+        }
+
+        function hatirlaticiSil(id) {
+            if (confirm("Bu hatırlatıcıyı silmek istediğinize emin misiniz?")) {
+                hatirlaticilar = hatirlaticilar.filter(h => h.id !== id);
+                localStorage.setItem('idare_hatirlaticilar', JSON.stringify(hatirlaticilar));
+                hatirlaticilariListele();
+            }
+        }
+
+        // --- 3. ÖĞRETMEN / KADRO YÖNETİMİ ---
+        function ogretmenEkle() {
+            const input = document.getElementById('inputYeniOgretmen');
+            const ad = input.value.trim();
+            if (!ad) return alert("Lütfen isim giriniz.");
+            if (ogretmenler.includes(ad)) return alert("Bu öğretmen zaten listede var.");
+
+            ogretmenler.push(ad);
+            localStorage.setItem('idare_ogretmenler', JSON.stringify(ogretmenler));
+            input.value = '';
+            kadroListele();
+        }
+
+        function ogretmenSil(index) {
+            if (confirm(`"${ogretmenler[index]}" isimli öğretmeni listeden çıkarmak istediğinize emin misiniz?`)) {
+                ogretmenler.splice(index, 1);
+                localStorage.setItem('idare_ogretmenler', JSON.stringify(ogretmenler));
+                kadroListele();
+            }
+        }
+
+        function kadroListele() {
+            const container = document.getElementById('ogretmenListesiKadro');
+            container.innerHTML = '';
+            if (ogretmenler.length === 0) {
+                container.innerHTML = `<div class="text-xs text-gray-400 text-center py-2">Henüz öğretmen eklenmedi.</div>`;
+                return;
+            }
+            ogretmenler.forEach((o, i) => {
+                const item = document.createElement('div');
+                item.className = "flex justify-between items-center bg-gray-50 p-2 rounded-lg border border-gray-200 text-sm";
+                item.innerHTML = `
+                    <span class="font-medium text-gray-700">${o}</span>
+                    <button onclick="ogretmenSil(${i})" class="text-red-500 hover:text-red-700 text-xs font-bold"><i class="fa-solid fa-trash"></i> Sil</button>
+                `;
+                container.appendChild(item);
+            });
+        }
+
+        function ogretmenDropdownDoldur() {
+            const select = document.getElementById('selectOgretmen');
+            select.innerHTML = '';
+            if (ogretmenler.length === 0) {
+                select.innerHTML = `<option value="">Önce Kadroyu Düzenle Butonundan Öğretmen Ekleme Yapınız</option>`;
+                return;
+            }
+            ogretmenler.forEach(o => {
+                const opt = document.createElement('option');
+                opt.value = o;
+                opt.innerText = o;
+                select.appendChild(opt);
+            });
+        }
+
+        // --- 4. TAKVİM VE PERSONEL DEVAM MANTIĞI ---
+        function takvimCiz() {
+            const aylar = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+            const yil = suAnkiTarih.getFullYear();
+            const ay = suAnkiTarih.getMonth();
+
+            document.getElementById('takvimAyYil').innerText = `${aylar[ay]} ${yil}`;
+
+            const ilkGun = new Date(yil, ay, 1).getDay();
+            const toplamGun = new Date(yil, ay + 1, 0).getDate();
+            const offset = (ilkGun === 0) ? 6 : ilkGun - 1;
+
+            const container = document.getElementById('takvimGunleri');
+            container.innerHTML = '';
+
+            for (let i = 0; i < offset; i++) {
+                container.appendChild(document.createElement('div'));
+            }
+
+            for (let g = 1; g <= toplamGun; g++) {
+                const dateKey = `${yil}-${String(ay + 1).padStart(2, '0')}-${String(g).padStart(2, '0')}`;
+                const cell = document.createElement('div');
+                cell.className = "min-h-[70px] bg-gray-50 border border-gray-200 rounded-lg p-1 cursor-pointer hover:bg-indigo-50 transition flex flex-col justify-between";
+                cell.onclick = () => gunTikla(dateKey);
+
+                const kayitlar = devamsizlik[dateKey] || [];
+                let etiketlerHtml = kayitlar.map((k, idx) => `
+                    <div class="text-[10px] bg-amber-100 text-amber-900 px-1 py-0.5 rounded truncate font-medium mt-0.5 flex justify-between items-center">
+                        <span>${k.ad} (${k.durum[0]})</span>
+                        <span onclick="event.stopPropagation(); personelSil('${dateKey}', ${idx})" class="text-red-500 font-bold ml-1">×</span>
+                    </div>
+                `).join('');
+
+                cell.innerHTML = `
+                    <div class="font-bold text-xs text-gray-700">${g}</div>
+                    <div>${etiketlerHtml}</div>
+                `;
+                container.appendChild(cell);
+            }
+        }
+
+        function ayDegistir(yon) {
+            suAnkiTarih.setMonth(suAnkiTarih.getMonth() + yon);
+            takvimCiz();
+        }
+
+        function gunTikla(dateKey) {
+            secilenGunStr = dateKey;
+            document.getElementById('selectedDateTitle').innerText = `${dateKey} Tarihli İzin/Rapor Girişi`;
+            openModal('modalPersonelEkle');
+        }
+
+        function personelEkle() {
+            const ad = document.getElementById('selectOgretmen').value;
+            const durum = document.getElementById('inputDurumTur').value;
+
+            if (!ad) return alert("Lütfen listeden bir öğretmen seçin veya önce öğretmen ekleyin.");
+
+            if (!devamsizlik[secilenGunStr]) devamsizlik[secilenGunStr] = [];
+            devamsizlik[secilenGunStr].push({ ad: ad, durum: durum });
+
+            localStorage.setItem('idare_devamsizlik', JSON.stringify(devamsizlik));
+            takvimCiz();
+            closeModal('modalPersonelEkle');
+        }
+
+        function personelSil(dateKey, idx) {
+            devamsizlik[dateKey].splice(idx, 1);
+            if (devamsizlik[dateKey].length === 0) delete devamsizlik[dateKey];
+            localStorage.setItem('idare_devamsizlik', JSON.stringify(devamsizlik));
+            takvimCiz();
+        }
+
+        // --- GİZLİ MENÜ FONKSİYONLARI ---
+        function eksikKontrolu() {
+            let bekleyenHatirlatici = hatirlaticilar.filter(h => !h.tamamlandi).length;
+            let onayBekleyenIs = isler.filter(i => !i.mudurOnay).length;
+
+            alert(`🔍 HIZLI ÖZET KONTROLÜ:\n\n• Müdür Onayı Bekleyen İşler: ${onayBekleyenIs} adet\n• Tamamlanmamış Süreli Görevler: ${bekleyenHatirlatici} adet`);
+            toggleMenu();
+        }
+
+        function arsivle() {
+            if (confirm("2026-2027 Eğitim-Öğretim Yılı verilerini arşivleyip ekranı temizlemek istediğinize emin misiniz?")) {
+                localStorage.clear();
+                isler = []; hatirlaticilar = []; devamsizlik = {}; ogretmenler = [];
+                isleriListele(); hatirlaticilariListele(); takvimCiz();
+                alert("Eğitim-Öğretim yılı başarıyla arşivlendi. Yeni döneme temiz bir başlangıç yapıldı.");
+            }
+            toggleMenu();
+        }
+
+        function veriYedekle() {
+            const data = { isler, hatirlaticilar, devamsizlik, ogretmenler };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `idare_paneli_yedek_${new Date().toISOString().slice(0,10)}.json`;
+            a.click();
+            toggleMenu();
+        }
+    </script>
+</body>
+</html>
