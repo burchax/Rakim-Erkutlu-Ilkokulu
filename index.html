@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sosyal Etkinlik Takip Sistemi</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-4">
+  <div class="max-w-md mx-auto bg-white rounded-xl shadow-md p-6" id="app"></div>
+
+  <script>
+    // Örnek Veri Yapısı
+    const data = {
+      classes: ['2-A', '2-B', '4-A', '4-B'],
+      events: ['29 Ekim Töreni', 'Masa Tenisi Turnuvası', 'İngilizce Drama Gösterisi'],
+      students: {
+        '2-A': ['Ali Yılmaz', 'Ayşe Kaya', 'Mehmet Demir', 'Zeynep Çelik'],
+        '2-B': ['Can Öztürk', 'Elif Şahin', 'Burak Arslan'],
+        '4-A': ['Deniz Yıldız', 'Ece Aydın', 'Mert Koç'],
+        '4-B': ['Selin Acar', 'Kaan Yalçın', 'Seda Avcı']
+      }
+    };
+
+    // Uygulama Durumu (State)
+    let currentStep = 'classes'; // 'classes', 'events', 'students'
+    let selectedClass = null;
+    let selectedEvent = null;
+    let records = {}; // Key: "sınıf_etkinlik_öğrenci", Value: "katilim" | "performans"
+
+    function render() {
+      const app = document.getElementById('app');
+      
+      // 1. ADIM: Sınıf Seçimi
+      if (currentStep === 'classes') {
+        app.innerHTML = `
+          <h1 class="text-xl font-bold text-center mb-6 text-gray-800">Sınıf Seçiniz</h1>
+          <div class="space-y-3">
+            ${data.classes.map(c => `
+              <button onclick="selectClass('${c}')" class="w-full py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-lg shadow">
+                ${c} Sınıfı
+              </button>
+            `).join('')}
+          </div>
+        `;
+      } 
+      // 2. ADIM: Etkinlik Listesi
+      else if (currentStep === 'events') {
+        app.innerHTML = `
+          <div class="flex items-center mb-6">
+            <button onclick="goBack('classes')" class="text-sm bg-gray-200 px-3 py-1 rounded mr-3">← Sınıf Değiştir</button>
+            <h1 class="text-lg font-bold text-gray-800">${selectedClass} - Etkinlikler</h1>
+          </div>
+          <div class="space-y-3">
+            ${data.events.map(ev => {
+              const isCompleted = checkEventCompleted(selectedClass, ev);
+              return `
+                <button onclick="selectEvent('${ev}')" class="w-full p-4 rounded-lg border text-left flex justify-between items-center ${isCompleted ? 'bg-green-100 border-green-500 text-green-900' : 'bg-gray-50 border-gray-200 text-gray-800'}">
+                  <span class="font-medium">${ev}</span>${isCompleted ? '<span class="text-green-600 font-bold">✔️ Tamamlandı</span>' : ''}
+                </button>
+              `;
+            }).join('')}
+          </div>
+        `;
+      } 
+      // 3. ADIM: Öğrenci Listesi & İşaretleme
+      else if (currentStep === 'students') {
+        const studentList = data.students[selectedClass] || [];
+        app.innerHTML = `
+          <div class="flex items-center mb-4">
+            <button onclick="goBack('events')" class="text-sm bg-gray-200 px-3 py-1 rounded mr-3">← Etkinlikler</button>
+            <div>
+              <h1 class="text-base font-bold text-gray-800">${selectedEvent}</h1>
+              <p class="text-xs text-gray-500">${selectedClass} Sınıfı</p>
+            </div>
+          </div>
+
+          <div class="space-y-4 my-6">
+            ${studentList.map(st => {
+              const key = `${selectedClass}_${selectedEvent}_${st}`;
+              const val = records[key];
+              return `
+                <div class="p-3 bg-gray-50 rounded-lg border flex flex-col space-y-2">
+                  <span class="font-medium text-gray-700">${st}</span>
+                  <div class="flex space-x-2">
+                    <button onclick="toggleSelect('${st}', 'katilim')" class="flex-1 py-1.5 text-xs font-semibold rounded border ${val === 'katilim' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-300'}">
+                      Katılım
+                    </button>
+                    <button onclick="toggleSelect('${st}', 'performans')" class="flex-1 py-1.5 text-xs font-semibold rounded border ${val === 'performans' ? 'bg-purple-600 text-white border-purple-600' : 'bg-white text-gray-600 border-gray-300'}">
+                      Performans / Ürün
+                    </button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+
+          <button onclick="saveData()" class="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-lg shadow">
+            Kaydet
+          </button>
+        `;
+      }
+    }
+
+    // Navigasyon ve Mantık Fonksiyonları
+    function selectClass(c) { selectedClass = c; currentStep = 'events'; render(); }
+    function selectEvent(ev) { selectedEvent = ev; currentStep = 'students'; render(); }
+    function goBack(step) { currentStep = step; render(); }
+
+    function toggleSelect(student, type) {
+      const key = `${selectedClass}_${selectedEvent}_${student}`;
+      if (records[key] === type) {
+        delete records[key]; // İkinci kez tıklanınca seçimi kaldırır (Toggle)
+      } else {
+        records[key] = type;
+      }
+      render();
+    }
+
+    function saveData() {
+      alert('Kayıt başarıyla tamamlandı!');
+      currentStep = 'events';
+      render();
+    }
+
+    function checkEventCompleted(sClass, sEvent) {
+      return Object.keys(records).some(k => k.startsWith(`${sClass}_${sEvent}_`));
+    }
+
+    // İlk Çalıştırma
+    render();
+  </script>
+</body>
+</html>
