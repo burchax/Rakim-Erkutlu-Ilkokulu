@@ -1,6 +1,8 @@
 {
+  "redirects": [
+    { "source": "/", "destination": "/ogretmen", "permanent": true }
+  ],
   "rewrites": [
-    { "source": "/", "destination": "/ogretmen.html" },
     { "source": "/ogretmen", "destination": "/ogretmen.html" },
     { "source": "/idare", "destination": "/idare.html" }
   ]
