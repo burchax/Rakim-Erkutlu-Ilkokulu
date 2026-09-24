@@ -53,20 +53,20 @@
       }
     };
 
-    // Oturum Hafızasını (State) Yükle
-    let activeTab = localStorage.getItem('activeTab') || 'social';
-    let currentStep = localStorage.getItem('currentStep') || 'classes';
-    let selectedClass = localStorage.getItem('selectedClass') || null;
-    let selectedEventId = localStorage.getItem('selectedEventId') || null;
+    // Ekran Durumlarını Hafızada Tutma (Session State)
+    let activeTab = sessionStorage.getItem('activeTab') || 'social';
+    let currentStep = sessionStorage.getItem('currentStep') || 'classes';
+    let selectedClass = sessionStorage.getItem('selectedClass') || null;
+    let selectedEventId = sessionStorage.getItem('selectedEventId') || null;
     let selectedEventObj = null;
     let records = {};
     let isMenuOpen = false;
 
     function saveState() {
-      localStorage.setItem('activeTab', activeTab);
-      localStorage.setItem('currentStep', currentStep);
-      if (selectedClass) localStorage.setItem('selectedClass', selectedClass); else localStorage.removeItem('selectedClass');
-      if (selectedEventId) localStorage.setItem('selectedEventId', selectedEventId); else localStorage.removeItem('selectedEventId');
+      sessionStorage.setItem('activeTab', activeTab);
+      sessionStorage.setItem('currentStep', currentStep);
+      if (selectedClass) sessionStorage.setItem('selectedClass', selectedClass); else sessionStorage.removeItem('selectedClass');
+      if (selectedEventId) sessionStorage.setItem('selectedEventId', selectedEventId); else sessionStorage.removeItem('selectedEventId');
     }
 
     function initFirebaseListener() {
@@ -75,7 +75,7 @@
         return;
       }
       
-      // Buluttan Canlı Dinleyici (Events)
+      // Buluttan Canlı Etkinlik Dinleyicisi
       window.onSnapshot(window.collection(window.db, "events"), (snapshot) => {
         data.events = [];
         snapshot.forEach((doc) => {
@@ -89,7 +89,7 @@
         render();
       });
 
-      // Buluttan Canlı Dinleyici (Records)
+      // Buluttan Canlı Öğrenci Kayıt Dinleyicisi
       window.onSnapshot(window.collection(window.db, "records"), (snapshot) => {
         records = {};
         snapshot.forEach((doc) => {
