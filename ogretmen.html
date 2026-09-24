@@ -7,12 +7,11 @@
   <meta property="og:title" content="Öğretmen Paneli" />
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Firebase CDN Bağlantıları (v10 - Web Uyumlu Modules) -->
+  <!-- Firebase CDN Bağlantıları -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // Firebase Yapılandırma Bilgileriniz
     const firebaseConfig = {
       apiKey: "AIzaSyBICjJMMMT3Z1FgsbR2kaUIhNrqvRcg7wM",
       authDomain: "rakim-erkutlu-io-ogretmen.firebaseapp.com",
@@ -22,11 +21,9 @@
       appId: "1:35323173695:web:3031e2107a3e3bf0c8918a"
     };
 
-    // Firebase Başlatma
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Global Değişkenler
     window.db = db;
     window.collection = collection;
     window.onSnapshot = onSnapshot;
@@ -34,16 +31,16 @@
     window.doc = doc;
     window.updateDoc = updateDoc;
     window.deleteDoc = deleteDoc;
+    window.setDoc = setDoc;
   </script>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800 antialiased p-4 md:p-6">
   <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden relative" id="app"></div>
 
   <script>
-    // Rakım Erkutlu İlkokulu Sınıf ve Öğrenci Verileri
     const data = {
       classes: ['1-A', '1-B', '2-A', '2-B', '3-A', '3-B', '4-A', '4-B'],
-      events: [], // Buluttan dinamik çekilecek
+      events: [],
       students: {
         '1-A': ['ALYA DEVRİM AYDIN', 'AYŞE NİSA ECEVİT', 'AZRA ÇATAN', 'EFE MEHMET AKTAN', 'EMRAH SERPEN', 'MEHMET SELİM ÖRDEK', 'MİRAN EMİN DEMİR', 'YAREN BÜLBÜL', 'MİRAÇ ASİL YÖRE', 'ROJHAT ECEVİT', 'MUHAMMED NAIF', 'YUSUF DABDABEN', 'HALE HIRFAN', 'SEM HIRFAN', 'YAKUP EL UGLA', 'VAHID TAHHAN', 'NIDAL NAIF', 'AYŞE HIRFAN', 'MIRAL ELHACTALİB'],
         '1-B': ['AHMET ÖZMEN', 'NEFES ÜSTEBAY', 'ALİ YÜCEL', 'ALMİNA MASAL BİLMEDİ', 'ARYA CAYMAZ', 'HAVİN OCAĞ', 'BUĞLEM ADA MATSAR', 'DENİZ ÖZSOY', 'ELANUR UZTEMUR', 'HÜMEYRA DAĞTEKİN', 'MUAZ ALİ KULAŞ', 'YAĞIZ PİRENVİSE', 'FERHAT MURAD', 'NURİ NAİF', 'MUHAMMED MUHAMMED', 'HANİN HERFAN', 'YUSUF ELUKLA', 'İBRAHİM HAMZA', 'MUSTAFA HAMZA', 'NURELHUDE RECEP'],
@@ -56,38 +53,43 @@
       }
     };
 
-    let activeTab = 'social';
-    let currentStep = 'classes';
-    let selectedClass = null;
+    // Oturum Hafızasını (State) Yükle
+    let activeTab = localStorage.getItem('activeTab') || 'social';
+    let currentStep = localStorage.getItem('currentStep') || 'classes';
+    let selectedClass = localStorage.getItem('selectedClass') || null;
+    let selectedEventId = localStorage.getItem('selectedEventId') || null;
     let selectedEventObj = null;
     let records = {};
     let isMenuOpen = false;
 
-    // Firebase Gerçek Zamanlı Dinleyiciyi Başlatma
+    function saveState() {
+      localStorage.setItem('activeTab', activeTab);
+      localStorage.setItem('currentStep', currentStep);
+      if (selectedClass) localStorage.setItem('selectedClass', selectedClass); else localStorage.removeItem('selectedClass');
+      if (selectedEventId) localStorage.setItem('selectedEventId', selectedEventId); else localStorage.removeItem('selectedEventId');
+    }
+
     function initFirebaseListener() {
       if (!window.db) {
         setTimeout(initFirebaseListener, 200);
         return;
       }
       
-      // Etkinlikleri Buluttan Canlı Dinle
+      // Buluttan Canlı Dinleyici (Events)
       window.onSnapshot(window.collection(window.db, "events"), (snapshot) => {
         data.events = [];
         snapshot.forEach((doc) => {
           data.events.push({ id: doc.id, ...doc.data() });
         });
 
-        // Veritabanı bomboşsa ilk olarak varsayılan İlköğretim Haftası etkinliğini ekle
-        if (data.events.length === 0) {
-          window.addDoc(window.collection(window.db, "events"), {
-            name: "İlköğretim Haftası Programı",
-            date: "21-25 Eylül 2026"
-          });
+        if (selectedEventId) {
+          selectedEventObj = data.events.find(e => e.id === selectedEventId) || null;
         }
+
         render();
       });
 
-      // Öğrenci Kayıtlarını Buluttan Canlı Dinle
+      // Buluttan Canlı Dinleyici (Records)
       window.onSnapshot(window.collection(window.db, "records"), (snapshot) => {
         records = {};
         snapshot.forEach((doc) => {
@@ -98,7 +100,7 @@
     }
 
     function toggleMenu() { isMenuOpen = !isMenuOpen; render(); }
-    function switchTab(tab) { activeTab = tab; currentStep = 'classes'; selectedClass = null; selectedEventObj = null; isMenuOpen = false; render(); }
+    function switchTab(tab) { activeTab = tab; currentStep = 'classes'; selectedClass = null; selectedEventId = null; selectedEventObj = null; isMenuOpen = false; saveState(); render(); }
 
     function renderHeader() {
       return `
@@ -169,7 +171,7 @@
               <button onclick="goBack('classes')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg font-medium transition-colors">← Sınıf Değiştir</button>
             </div>
             <div class="space-y-3">
-              ${data.events.length === 0 ? '<p class="text-sm text-slate-400 text-center py-4">Henüz etkinlik bulunmuyor...</p>' : ''}
+              ${data.events.length === 0 ? '<p class="text-sm text-slate-400 text-center py-4">Henüz kayıtlı etkinlik bulunmuyor. Üç noktadan (⋮) ekleyebilirsiniz.</p>' : ''}
               ${data.events.map(ev => {
                 const isCompleted = checkEventCompleted(selectedClass, ev.name);
                 return `
@@ -192,6 +194,10 @@
           </div>
         `;
       } else if (currentStep === 'students') {
+        if (!selectedEventObj) {
+          goBack('events');
+          return;
+        }
         const studentList = data.students[selectedClass] || [];
         app.innerHTML = `
           ${renderHeader()}
@@ -224,7 +230,6 @@
       }
     }
 
-    // Bulut Tabanlı Fonksiyonlar
     async function addNewEvent() {
       isMenuOpen = false;
       const name = prompt("Sosyal Etkinlik Adını Giriniz:");
@@ -235,7 +240,6 @@
         name: name.trim(),
         date: date ? date.trim() : 'Belirtilmedi'
       });
-      alert(`"${name}" bulut veritabanına eklendi!`);
     }
 
     async function editEventDirectly(id) {
@@ -251,7 +255,6 @@
         name: newName.trim(),
         date: newDate ? newDate.trim() : eventObj.date
       });
-      alert("Etkinlik bulut üzerinde güncellendi!");
     }
 
     async function deleteEventDirectly(id) {
@@ -260,7 +263,6 @@
 
       if (confirm(`"${eventObj.name}" etkinliğini silmek istediğinize emin misiniz?`)) {
         await window.deleteDoc(window.doc(window.db, "events", id));
-        alert("Etkinlik buluttan silindi!");
       }
     }
 
@@ -269,12 +271,10 @@
       const newVal = records[key] === type ? null : type;
       
       if (newVal) {
-        await window.updateDoc(window.doc(window.db, "records", key), { val: newVal }).catch(async () => {
-          await window.addDoc(window.collection(window.db, "records"), { id: key, val: newVal });
-        });
+        await window.setDoc(window.doc(window.db, "records", key), { val: newVal });
         records[key] = newVal;
       } else {
-        await window.deleteDoc(window.doc(window.db, "records", key)).catch(() => {});
+        await window.deleteDoc(window.doc(window.db, "records", key));
         delete records[key];
       }
       render();
@@ -301,13 +301,12 @@
       alert(missingList.length === 0 ? `"${targetEventObj.name}" etkinliği için tüm öğrencilerin girişi tamamlanmış! 🎉` : `"${targetEventObj.name}" için Giriş Yapılmayan Öğrenciler (${missingList.length} Kişi):\n\n` + missingList.join("\n"));
     }
 
-    function selectClass(c) { selectedClass = c; currentStep = 'events'; render(); }
-    function selectEvent(id) { selectedEventObj = data.events.find(e => e.id === id); currentStep = 'students'; render(); }
-    function goBack(step) { currentStep = step; render(); }
-    function saveData() { alert('Kayıtlar bulut veritabanında saklandı!'); currentStep = 'events'; render(); }
+    function selectClass(c) { selectedClass = c; currentStep = 'events'; saveState(); render(); }
+    function selectEvent(id) { selectedEventId = id; selectedEventObj = data.events.find(e => e.id === id); currentStep = 'students'; saveState(); render(); }
+    function goBack(step) { currentStep = step; saveState(); render(); }
+    function saveData() { alert('Kayıtlar bulut veritabanında saklandı!'); currentStep = 'events'; saveState(); render(); }
     function checkEventCompleted(sClass, eventName) { return Object.keys(records).some(k => k.startsWith(`${sClass}_${eventName}_`)); }
 
-    // Uygulamayı ve Bulut Dinleyicisini Başlat
     initFirebaseListener();
     render();
   </script>
