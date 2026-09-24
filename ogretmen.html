@@ -6,17 +6,44 @@
   <title>Öğretmen Paneli</title>
   <meta property="og:title" content="Öğretmen Paneli" />
   <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Firebase CDN Bağlantıları (v10 - Web Uyumlu Modules) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // Firebase Yapılandırma Bilgileriniz
+    const firebaseConfig = {
+      apiKey: "AIzaSyBICjJMMMT3Z1FgsbR2kaUIhNrqvRcg7wM",
+      authDomain: "rakim-erkutlu-io-ogretmen.firebaseapp.com",
+      projectId: "rakim-erkutlu-io-ogretmen",
+      storageBucket: "rakim-erkutlu-io-ogretmen.firebasestorage.app",
+      messagingSenderId: "35323173695",
+      appId: "1:35323173695:web:3031e2107a3e3bf0c8918a"
+    };
+
+    // Firebase Başlatma
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // Global Değişkenler
+    window.db = db;
+    window.collection = collection;
+    window.onSnapshot = onSnapshot;
+    window.addDoc = addDoc;
+    window.doc = doc;
+    window.updateDoc = updateDoc;
+    window.deleteDoc = deleteDoc;
+  </script>
 </head>
 <body class="bg-slate-50 min-h-screen text-slate-800 antialiased p-4 md:p-6">
   <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden relative" id="app"></div>
 
   <script>
-    // Rakım Erkutlu İlkokulu Sınıf, Sabit Etkinlik ve Öğrenci Verileri
+    // Rakım Erkutlu İlkokulu Sınıf ve Öğrenci Verileri
     const data = {
       classes: ['1-A', '1-B', '2-A', '2-B', '3-A', '3-B', '4-A', '4-B'],
-      events: [
-        { id: 1, name: 'İlköğretim Haftası Programı', date: '21-25 Eylül 2026' }
-      ],
+      events: [], // Buluttan dinamik çekilecek
       students: {
         '1-A': ['ALYA DEVRİM AYDIN', 'AYŞE NİSA ECEVİT', 'AZRA ÇATAN', 'EFE MEHMET AKTAN', 'EMRAH SERPEN', 'MEHMET SELİM ÖRDEK', 'MİRAN EMİN DEMİR', 'YAREN BÜLBÜL', 'MİRAÇ ASİL YÖRE', 'ROJHAT ECEVİT', 'MUHAMMED NAIF', 'YUSUF DABDABEN', 'HALE HIRFAN', 'SEM HIRFAN', 'YAKUP EL UGLA', 'VAHID TAHHAN', 'NIDAL NAIF', 'AYŞE HIRFAN', 'MIRAL ELHACTALİB'],
         '1-B': ['AHMET ÖZMEN', 'NEFES ÜSTEBAY', 'ALİ YÜCEL', 'ALMİNA MASAL BİLMEDİ', 'ARYA CAYMAZ', 'HAVİN OCAĞ', 'BUĞLEM ADA MATSAR', 'DENİZ ÖZSOY', 'ELANUR UZTEMUR', 'HÜMEYRA DAĞTEKİN', 'MUAZ ALİ KULAŞ', 'YAĞIZ PİRENVİSE', 'FERHAT MURAD', 'NURİ NAİF', 'MUHAMMED MUHAMMED', 'HANİN HERFAN', 'YUSUF ELUKLA', 'İBRAHİM HAMZA', 'MUSTAFA HAMZA', 'NURELHUDE RECEP'],
@@ -36,6 +63,40 @@
     let records = {};
     let isMenuOpen = false;
 
+    // Firebase Gerçek Zamanlı Dinleyiciyi Başlatma
+    function initFirebaseListener() {
+      if (!window.db) {
+        setTimeout(initFirebaseListener, 200);
+        return;
+      }
+      
+      // Etkinlikleri Buluttan Canlı Dinle
+      window.onSnapshot(window.collection(window.db, "events"), (snapshot) => {
+        data.events = [];
+        snapshot.forEach((doc) => {
+          data.events.push({ id: doc.id, ...doc.data() });
+        });
+
+        // Veritabanı bomboşsa ilk olarak varsayılan İlköğretim Haftası etkinliğini ekle
+        if (data.events.length === 0) {
+          window.addDoc(window.collection(window.db, "events"), {
+            name: "İlköğretim Haftası Programı",
+            date: "21-25 Eylül 2026"
+          });
+        }
+        render();
+      });
+
+      // Öğrenci Kayıtlarını Buluttan Canlı Dinle
+      window.onSnapshot(window.collection(window.db, "records"), (snapshot) => {
+        records = {};
+        snapshot.forEach((doc) => {
+          records[doc.id] = doc.data().val;
+        });
+        render();
+      });
+    }
+
     function toggleMenu() { isMenuOpen = !isMenuOpen; render(); }
     function switchTab(tab) { activeTab = tab; currentStep = 'classes'; selectedClass = null; selectedEventObj = null; isMenuOpen = false; render(); }
 
@@ -51,7 +112,8 @@
               <button onclick="toggleMenu()" class="p-2 text-indigo-100 hover:text-white hover:bg-white/10 rounded-lg transition-all text-xl font-bold leading-none">&#8942;</button>
               ${isMenuOpen ? `
                 <div class="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-slate-100 z-50 py-1.5 text-slate-700">
-                  <button onclick="showMissingClasses()" class="flex items-center w-full text-left px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-600 font-medium transition-colors"><span class="mr-2">🏫</span> Tamamlanmayan Sınıflar</button>
+                  <button onclick="addNewEvent()" class="flex items-center w-full text-left px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-600 font-medium transition-colors"><span class="mr-2">➕</span> Yeni Etkinlik Ekle</button>
+                  <button onclick="showMissingClasses()" class="flex items-center w-full text-left px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-600 font-medium border-t border-slate-100 transition-colors"><span class="mr-2">🏫</span> Tamamlanmayan Sınıflar</button>
                   <button onclick="showMissingStudents()" class="flex items-center w-full text-left px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-600 font-medium border-t border-slate-100 transition-colors"><span class="mr-2">📋</span> Verileri Eksik Öğrenciler</button>
                 </div>
               ` : ''}
@@ -107,18 +169,21 @@
               <button onclick="goBack('classes')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg font-medium transition-colors">← Sınıf Değiştir</button>
             </div>
             <div class="space-y-3">
+              ${data.events.length === 0 ? '<p class="text-sm text-slate-400 text-center py-4">Henüz etkinlik bulunmuyor...</p>' : ''}
               ${data.events.map(ev => {
                 const isCompleted = checkEventCompleted(selectedClass, ev.name);
                 return `
-                  <div onclick="selectEvent(${ev.id})" class="p-4 rounded-xl border flex justify-between items-center cursor-pointer hover:border-indigo-300 transition-all ${isCompleted ? 'bg-emerald-50/60 border-emerald-200 text-emerald-900 shadow-sm' : 'bg-white border-slate-200 shadow-sm'}">
-                    <div class="flex-1 pr-3">
+                  <div class="p-4 rounded-xl border flex justify-between items-center transition-all ${isCompleted ? 'bg-emerald-50/60 border-emerald-200 text-emerald-900 shadow-sm' : 'bg-white border-slate-200 shadow-sm'}">
+                    <div class="flex-1 cursor-pointer pr-3" onclick="selectEvent('${ev.id}')">
                       <div class="flex items-center space-x-2">
                         <span class="font-bold text-sm text-slate-800 hover:text-indigo-600">${ev.name}</span>${isCompleted ? '<span class="bg-emerald-100 text-emerald-700 font-bold text-[10px] px-2 py-0.5 rounded-full">✔️ Tamamlandı</span>' : ''}
                       </div>
-                      <p class="text-xs text-slate-500 font-medium mt-0.5">📅 Tarih: ${ev.date}</p>
+                      <p class="text-xs text-slate-500 font-medium mt-0.5">📅 Tarih: ${ev.date || 'Belirtilmedi'}</p>
                     </div>
-                    <div>
-                      <button class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs rounded-lg transition-colors">Giriş Yap →</button>
+                    <div class="flex items-center space-x-1 border-l border-slate-100 pl-2">
+                      <button onclick="editEventDirectly('${ev.id}')" title="Düzenle" class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors text-xs font-semibold">✏️</button>
+                      <button onclick="deleteEventDirectly('${ev.id}')" title="Sil" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-xs font-semibold">🗑️</button>
+                      <button onclick="selectEvent('${ev.id}')" class="ml-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs rounded-lg transition-colors">Giriş Yap →</button>
                     </div>
                   </div>
                 `;
@@ -159,6 +224,62 @@
       }
     }
 
+    // Bulut Tabanlı Fonksiyonlar
+    async function addNewEvent() {
+      isMenuOpen = false;
+      const name = prompt("Sosyal Etkinlik Adını Giriniz:");
+      if (!name || name.trim() === "") return;
+      const date = prompt("Tarih veya Tarih Aralığını Giriniz (Örn: 21-25 Eylül 2026):", "21-25 Eylül 2026");
+
+      await window.addDoc(window.collection(window.db, "events"), {
+        name: name.trim(),
+        date: date ? date.trim() : 'Belirtilmedi'
+      });
+      alert(`"${name}" bulut veritabanına eklendi!`);
+    }
+
+    async function editEventDirectly(id) {
+      const eventObj = data.events.find(e => e.id === id);
+      if (!eventObj) return;
+
+      const newName = prompt("Etkinlik Adını Düzenleyin:", eventObj.name);
+      if (!newName || newName.trim() === "") return;
+
+      const newDate = prompt("Tarihi Düzenleyin:", eventObj.date);
+
+      await window.updateDoc(window.doc(window.db, "events", id), {
+        name: newName.trim(),
+        date: newDate ? newDate.trim() : eventObj.date
+      });
+      alert("Etkinlik bulut üzerinde güncellendi!");
+    }
+
+    async function deleteEventDirectly(id) {
+      const eventObj = data.events.find(e => e.id === id);
+      if (!eventObj) return;
+
+      if (confirm(`"${eventObj.name}" etkinliğini silmek istediğinize emin misiniz?`)) {
+        await window.deleteDoc(window.doc(window.db, "events", id));
+        alert("Etkinlik buluttan silindi!");
+      }
+    }
+
+    async function toggleSelect(student, type) {
+      const key = `${selectedClass}_${selectedEventObj.name}_${student}`;
+      const newVal = records[key] === type ? null : type;
+      
+      if (newVal) {
+        await window.updateDoc(window.doc(window.db, "records", key), { val: newVal }).catch(async () => {
+          await window.addDoc(window.collection(window.db, "records"), { id: key, val: newVal });
+        });
+        records[key] = newVal;
+      } else {
+        await window.deleteDoc(window.doc(window.db, "records", key)).catch(() => {});
+        delete records[key];
+      }
+      render();
+    }
+
     function showMissingClasses() {
       isMenuOpen = false;
       let targetEventObj = selectedEventObj || data.events[0];
@@ -183,16 +304,11 @@
     function selectClass(c) { selectedClass = c; currentStep = 'events'; render(); }
     function selectEvent(id) { selectedEventObj = data.events.find(e => e.id === id); currentStep = 'students'; render(); }
     function goBack(step) { currentStep = step; render(); }
-
-    function toggleSelect(student, type) {
-      const key = `${selectedClass}_${selectedEventObj.name}_${student}`;
-      records[key] = records[key] === type ? undefined : type;
-      render();
-    }
-
-    function saveData() { alert('Kayıt başarıyla tamamlandı!'); currentStep = 'events'; render(); }
+    function saveData() { alert('Kayıtlar bulut veritabanında saklandı!'); currentStep = 'events'; render(); }
     function checkEventCompleted(sClass, eventName) { return Object.keys(records).some(k => k.startsWith(`${sClass}_${eventName}_`)); }
 
+    // Uygulamayı ve Bulut Dinleyicisini Başlat
+    initFirebaseListener();
     render();
   </script>
 </body>
