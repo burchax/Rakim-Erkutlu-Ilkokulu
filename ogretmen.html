@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Öğretmen Portalı - Râkım Erkutlu İlkokulu</title>
+  <title>Öğretmen Portalı - Rakım Erkutlu İlkokulu</title>
   <script src="https://cdn.tailwindcss.com"></script>
 
   <!-- Firebase Bağlantısı -->
@@ -35,7 +35,7 @@
   <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden" id="app"></div>
 
   <script>
-    // Ana sayfa artık varsayılan olarak 'etkinlik' paneli ile açılıyor
+    // Ana sayfa varsayılan olarak 'etkinlik' paneli ile açılıyor
     let activeTab = 'etkinlik'; // 'etkinlik' veya 'evrak'
     let selectedTeacher = null;
     let selectedTerm = '1. Dönem';
@@ -160,10 +160,9 @@
       app.innerHTML = `
         <div class="bg-gradient-to-r from-blue-900 to-indigo-900 p-6 text-white flex justify-between items-center">
           <div>
-            <span class="text-xs uppercase tracking-widest text-indigo-300 font-semibold">Râkım Erkutlu İlkokulu</span>
+            <span class="text-xs uppercase tracking-widest text-indigo-300 font-semibold">Rakım Erkutlu İlkokulu</span>
             <h1 class="text-2xl font-black">🏫 Öğretmen Yönetim Portalı</h1>
           </div>
-          <!-- Sıralama Değiştirildi: 1. Sıraya Sosyal Etkinlik Geldi -->
           <div class="flex gap-2 bg-blue-950/60 p-1.5 rounded-xl border border-blue-700/50">
             <button onclick="switchTab('etkinlik')" class="px-4 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === 'etkinlik' ? 'bg-indigo-600 text-white shadow' : 'text-slate-300 hover:text-white'}">📊 Sosyal Etkinlik Takip</button>
             <button onclick="switchTab('evrak')" class="px-4 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === 'evrak' ? 'bg-indigo-600 text-white shadow' : 'text-slate-300 hover:text-white'}">📁 Evrak Takip</button>
@@ -176,9 +175,8 @@
       `;
     }
 
-    // SOSYAL ETKİNLİK MODÜLÜ (Eksiksiz Sınıf ve Öğrenci Listeli)
+    // SOSYAL ETKİNLİK MODÜLÜ
     function renderEtkinlikTab() {
-      // Örnek Öğrenci Listesi Şablonu
       const sampleStudents = [
         { id: '101', no: '12', name: 'Ahmet Yılmaz' },
         { id: '102', no: '24', name: 'Ayşe Kaya' },
