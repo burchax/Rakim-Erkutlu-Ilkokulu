@@ -8,7 +8,7 @@
   <!-- Firebase Bulut Veritabanı Bağlantısı -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, addDoc, updateDoc, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBICjJMMMT3Z1FgsbR2kaUIhNrqvRcg7wM",
@@ -67,6 +67,21 @@
     }
     .main-tab-btn.active { background: #3182ce; color: #ffffff; }
 
+    /* Arama Kutusu Stili */
+    .search-box {
+      width: 100%;
+      padding: 10px 14px;
+      border: 2px solid #cbd5e0;
+      border-radius: 8px;
+      font-size: 13px;
+      margin-bottom: 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .search-box:focus {
+      border-color: #3182ce;
+    }
+
     /* İdare Alt Sayfa Sekmeleri */
     .sub-tabs-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
     .sub-tabs { display: flex; gap: 6px; overflow-x: auto; }
@@ -84,6 +99,10 @@
     .item-card {
       background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
       padding: 12px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 6px;
+    }
+    .item-category-tag {
+      font-size: 10px; font-weight: 700; color: #2b6cb0; background: #ebf8ff;
+      padding: 2px 6px; border-radius: 4px; width: fit-content;
     }
     .item-header { display: flex; align-items: flex-start; gap: 10px; }
     .item-checkbox { width: 18px; height: 18px; cursor: pointer; margin-top: 2px; }
@@ -104,7 +123,7 @@
     .btn-cancel { background: #e2e8f0; color: #4a5568; }
     .btn-save { background: #3182ce; color: white; }
 
-    /* Sosyal Etkinlik Stilleri (Önceki Koddan) */
+    /* Sosyal Etkinlik Stilleri */
     .event-selector { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 12px; }
     .event-chip { background: #edf2f7; border: 1px solid #cbd5e0; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; }
     .event-chip.active { background: #3182ce; color: #ffffff; border-color: #3182ce; }
@@ -133,14 +152,35 @@
       <span class="status-badge">● Canlı Bulut Bağlantısı Aktif</span>
     </p>
 
-    <!-- Üst İki Ana Sekme -->
+    <!-- Üst İki Ana Sekme (Sıralama Değiştirildi) -->
     <div class="main-tabs">
-      <button class="main-tab-btn active" onclick="switchMainTab('ogretmenControl')">👨‍🏫 Öğretmen Paneli Kontrol</button>
-      <button class="main-tab-btn" onclick="switchMainTab('idareYonetim')">🏛️ İdare Yönetimi</button>
+      <button class="main-tab-btn active" onclick="switchMainTab('idareYonetim')">🏛️ İdare Yönetimi</button>
+      <button class="main-tab-btn" onclick="switchMainTab('ogretmenControl')">👨‍🏫 Öğretmen Paneli Kontrol</button>
     </div>
 
-    <!-- 1. SEKME: ÖĞRETMEN PANELİ KONTROL -->
-    <div id="tabOgretmenControl">
+    <!-- 1. SEKME: İDARE YÖNETİMİ (Varsayılan Açılış Sayfası) -->
+    <div id="tabIdareYonetim">
+      
+      <!-- 3 Sayfada Birden Genel Arama Kutusı -->
+      <input type="text" id="searchInput" class="search-box" placeholder="🔍 Tüm idari kayıtlarda (3 kategoride) ara..." oninput="handleSearch()">
+
+      <div class="sub-tabs-header" id="subTabsHeader">
+        <div class="sub-tabs">
+          <button class="sub-tab-btn active" id="btn-yapilanIsler" onclick="switchSubTab('yapilanIsler')">📌 Yapılan İşler</button>
+          <button class="sub-tab-btn" id="btn-resmiEvrak" onclick="switchSubTab('resmiEvrak')">📄 Resmi Evrak Takip</button>
+          <button class="sub-tab-btn" id="btn-teslimAlinan" onclick="switchSubTab('teslimAlinan')">📥 Teslim Alınan Evraklar</button>
+        </div>
+        <button class="add-btn" onclick="openAddModal()">＋ Ekle</button>
+      </div>
+
+      <!-- Dinamik İçerik Listesi -->
+      <div id="idareItemsList">
+        <!-- Kayıtlar Buraya Yüklenecek -->
+      </div>
+    </div>
+
+    <!-- 2. SEKME: ÖĞRETMEN PANELİ KONTROL -->
+    <div id="tabOgretmenControl" style="display: none;">
       <div style="margin-bottom: 20px;">
         <h3 style="font-size: 14px; color: #2b6cb0; border-bottom: 2px solid #e2e8f0; padding-bottom: 4px; margin-bottom: 10px;">📊 Canlı Sosyal Etkinlik Takibi</h3>
         <p style="font-size: 11px; color: #718096; margin-bottom: 8px;">İncelemek istediğiniz etkinliği seçin:</p>
@@ -154,23 +194,6 @@
           <span>Gelen / Giden Evrak Kayıt (Yakında)</span>
           <span>🔒</span>
         </div>
-      </div>
-    </div>
-
-    <!-- 2. SEKME: İDARE YÖNETİMİ -->
-    <div id="tabIdareYonetim" style="display: none;">
-      <div class="sub-tabs-header">
-        <div class="sub-tabs">
-          <button class="sub-tab-btn active" id="btn-yapilanIsler" onclick="switchSubTab('yapilanIsler')">📌 Yapılan İşler</button>
-          <button class="sub-tab-btn" id="btn-resmiEvrak" onclick="switchSubTab('resmiEvrak')">📄 Resmi Evrak Takip</button>
-          <button class="sub-tab-btn" id="btn-teslimAlinan" onclick="switchSubTab('teslimAlinan')">📥 Teslim Alınan Evraklar</button>
-        </div>
-        <button class="add-btn" onclick="openAddModal()">＋ Ekle</button>
-      </div>
-
-      <!-- Dinamik İçerik Listesi -->
-      <div id="idareItemsList">
-        <!-- Kayıtlar Buraya Yüklenecek -->
       </div>
     </div>
 
@@ -206,6 +229,12 @@
       '4-B': ['ALİ EREN SEVEN', 'BERAT ALPASLAN DINDAR', 'BETÜL MATSAR', 'BİLGESU BARAN', 'EREN YARIMAY', 'MEHMET ALİ ERKUŞ', 'ÖMER ALİ KESER', 'SALİH UYGÜL', 'SEYFETTİN MİRAÇ HASATEŞ', 'HALİL İBRAHİM KAYA', 'DERİN OKULMUŞ', 'BERZAN BİLMEDİ', 'YUSUF ÇİÇEKLİ', 'DURU RÜYA ASLAN', 'NEHİR ECEVİT', 'BÜŞRA AYAZ', 'MELISA ECEVİT', 'NAIF HERFAN', 'SEMİR DABDABEN', 'VOLKAN HASAN']
     };
 
+    const categoryNames = {
+      'yapilanIsler': '📌 Yapılan İşler',
+      'resmiEvrak': '📄 Resmi Evrak Takip',
+      'teslimAlinan': '📥 Teslim Alınan Evraklar'
+    };
+
     let events = [], records = {}, selectedEventId = null;
     let idareRecords = [];
     let currentSubTab = 'yapilanIsler';
@@ -237,17 +266,17 @@
       });
     }
 
-    // Tab Değiştirme
+    // Ana Tab Değiştirme
     window.switchMainTab = function(tabName) {
       document.querySelectorAll('.main-tab-btn').forEach(b => b.classList.remove('active'));
-      if (tabName === 'ogretmenControl') {
+      if (tabName === 'idareYonetim') {
         document.querySelectorAll('.main-tab-btn')[0].classList.add('active');
-        document.getElementById('tabOgretmenControl').style.display = 'block';
-        document.getElementById('tabIdareYonetim').style.display = 'none';
+        document.getElementById('tabIdareYonetim').style.display = 'block';
+        document.getElementById('tabOgretmenControl').style.display = 'none';
       } else {
         document.querySelectorAll('.main-tab-btn')[1].classList.add('active');
-        document.getElementById('tabOgretmenControl').style.display = 'none';
-        document.getElementById('tabIdareYonetim').style.display = 'block';
+        document.getElementById('tabIdareYonetim').style.display = 'none';
+        document.getElementById('tabOgretmenControl').style.display = 'block';
       }
     };
 
@@ -255,21 +284,39 @@
       currentSubTab = subTab;
       document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
       document.getElementById(`btn-${subTab}`).classList.add('active');
+      document.getElementById('searchInput').value = ""; // Sekme değiştirince aramayı sıfırla
       renderIdareTab();
     };
 
-    // İdare Kayıtlarını Ekrana Basma
+    // Arama Dinleme Fonksiyonu
+    window.handleSearch = function() {
+      renderIdareTab();
+    };
+
+    // İdare Kayıtlarını Ekrana Basma (Arama Özellikli)
     function renderIdareTab() {
       const container = document.getElementById('idareItemsList');
-      const filtered = idareRecords.filter(r => r.category === currentSubTab);
+      const searchQuery = document.getElementById('searchInput').value.trim().toLowerCase();
+      let filtered = [];
+
+      if (searchQuery !== "") {
+        // Arama yapılıyorsa 3 SAYFANIN TAMAMINDA ara
+        filtered = idareRecords.filter(r => r.text && r.text.toLowerCase().includes(searchQuery));
+      } else {
+        // Arama yoksa sadece seçili kategoriyi göster
+        filtered = idareRecords.filter(r => r.category === currentSubTab);
+      }
 
       if (filtered.length === 0) {
-        container.innerHTML = '<p style="text-align:center; font-size:12px; color:#a0aec0; margin-top:20px;">Henüz bu kategoriye ait bir kayıt bulunmuyor.</p>';
+        container.innerHTML = searchQuery !== "" 
+          ? '<p style="text-align:center; font-size:12px; color:#a0aec0; margin-top:20px;">Aramanıza uygun hiçbir kayıt bulunamadı.</p>'
+          : '<p style="text-align:center; font-size:12px; color:#a0aec0; margin-top:20px;">Henüz bu kategoriye ait bir kayıt bulunmuyor.</p>';
         return;
       }
 
       container.innerHTML = filtered.map(item => `
         <div class="item-card">
+          ${searchQuery !== "" ? `<span class="item-category-tag">${categoryNames[item.category] || item.category}</span>` : ''}
           <div class="item-header">
             <input type="checkbox" class="item-checkbox" ${item.approved ? 'checked' : ''} onchange="toggleApproval('${item.id}', this.checked)" title="Müdür Onayı">
             <span class="item-title" style="${item.approved ? 'text-decoration: line-through; color:#a0aec0;' : ''}">${item.text}</span>
@@ -291,7 +338,7 @@
     // Modal Pencere İşlemleri
     window.openAddModal = function() {
       editingId = null;
-      document.getElementById('modalTitle').innerText = "Yeni Kayıt Ekle";
+      document.getElementById('modalTitle').innerText = "Yeni Kayıt Ekle (" + categoryNames[currentSubTab] + ")";
       document.getElementById('modalInput').value = "";
       document.getElementById('dataModal').style.display = "flex";
     };
