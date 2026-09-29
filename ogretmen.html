@@ -20,23 +20,30 @@
       appId: "1:35323173695:web:3031e2107a3e3bf0c8918a"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    try {
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
 
-    window.db = db;
-    window.collection = collection;
-    window.onSnapshot = onSnapshot;
-    window.doc = doc;
-    window.setDoc = setDoc;
-    window.deleteDoc = deleteDoc;
+      window.db = db;
+      window.collection = collection;
+      window.onSnapshot = onSnapshot;
+      window.doc = doc;
+      window.setDoc = setDoc;
+      window.deleteDoc = deleteDoc;
+    } catch (e) {
+      console.error("Firebase başlatma hatası:", e);
+    }
   </script>
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen p-4 md:p-6 antialiased">
-  <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden" id="app"></div>
+  <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden" id="app">
+    <div class="p-12 text-center text-slate-500 font-bold">
+      ⏳ Uygulama Yükleniyor, Lütfen Bekleyiniz...
+    </div>
+  </div>
 
   <script>
-    // Ana sayfa varsayılan olarak 'etkinlik' paneli ile açılıyor
-    let activeTab = 'etkinlik'; // 'etkinlik' veya 'evrak'
+    let activeTab = 'etkinlik'; 
     let selectedTeacher = null;
     let selectedTerm = '1. Dönem';
     let selectedClass = '2-A';
@@ -54,30 +61,33 @@
         return;
       }
 
-      // Evrak Verilerini Dinle
-      window.onSnapshot(window.collection(window.db, "teacher_docs"), (snapshot) => {
-        docsData = {};
-        snapshot.forEach(docSnap => { docsData[docSnap.id] = docSnap.data(); });
-        render();
-      });
+      try {
+        window.onSnapshot(window.collection(window.db, "teacher_docs"), (snapshot) => {
+          docsData = {};
+          snapshot.forEach(docSnap => { docsData[docSnap.id] = docSnap.data(); });
+          render();
+        });
 
-      // İdare Onaylarını Dinle
-      window.onSnapshot(window.collection(window.db, "admin_approvals"), (snapshot) => {
-        adminApprovals = {};
-        snapshot.forEach(docSnap => { adminApprovals[docSnap.id] = docSnap.data().approved; });
-        render();
-      });
+        window.onSnapshot(window.collection(window.db, "admin_approvals"), (snapshot) => {
+          adminApprovals = {};
+          snapshot.forEach(docSnap => { adminApprovals[docSnap.id] = docSnap.data().approved; });
+          render();
+        });
 
-      // Sosyal Etkinlik Verilerini Dinle
-      window.onSnapshot(window.collection(window.db, "social_activities"), (snapshot) => {
-        socialData = {};
-        snapshot.forEach(docSnap => { socialData[docSnap.id] = docSnap.data(); });
-        render();
-      });
+        window.onSnapshot(window.collection(window.db, "social_activities"), (snapshot) => {
+          socialData = {};
+          snapshot.forEach(docSnap => { socialData[docSnap.id] = docSnap.data(); });
+          render();
+        });
+      } catch (err) {
+        console.error("Veri çekme hatası:", err);
+      }
+      
+      render();
     }
 
     async function toggleTeacherCheck(docId) {
-      if (!selectedTeacher) return;
+      if (!selectedTeacher || !window.db) return;
       const current = docsData[docId]?.teacherSubmitted || false;
       await window.setDoc(window.doc(window.db, "teacher_docs", docId), {
         teacherSubmitted: !current,
@@ -88,6 +98,7 @@
     window.toggleTeacherCheck = toggleTeacherCheck;
 
     async function saveSocialEntry(studentId, field, value) {
+      if (!window.db) return;
       const docKey = `${selectedClass}_${studentId}`;
       await window.setDoc(window.doc(window.db, "social_activities", docKey), {
         class: selectedClass,
@@ -110,7 +121,6 @@
     function switchTab(tab) { activeTab = tab; render(); }
     window.switchTab = switchTab;
 
-    // Evrak Listesi Şablonu
     const defaultDocs = [
       { id: '1', title: '1. Zümre Toplantı Tutanağı (Sene Başı)', term: '1. Dönem', deadline: 'Eylül Sonu', target: 'ALL' },
       { id: '2', title: '1. Veli Toplantı Tutanağı (Sene Başı)', term: '1. Dönem', deadline: 'Eylül Sonu', target: 'ALL' },
@@ -175,7 +185,6 @@
       `;
     }
 
-    // SOSYAL ETKİNLİK MODÜLÜ
     function renderEtkinlikTab() {
       const sampleStudents = [
         { id: '101', no: '12', name: 'Ahmet Yılmaz' },
@@ -258,7 +267,6 @@
       `;
     }
 
-    // EVRAK TAKİP MODÜLÜ
     function renderEvrakTab() {
       if (!selectedTeacher) {
         return `
@@ -341,6 +349,8 @@
       `;
     }
 
+    // İlk çizimi hemen yap, Firebase gelince güncellenecek
+    render();
     initFirebase();
   </script>
 </body>
