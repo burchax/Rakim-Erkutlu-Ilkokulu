@@ -78,9 +78,7 @@
       outline: none;
       transition: border-color 0.2s;
     }
-    .search-box:focus {
-      border-color: #3182ce;
-    }
+    .search-box:focus { border-color: #3182ce; }
 
     /* İdare Alt Sayfa Sekmeleri */
     .sub-tabs-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
@@ -95,6 +93,37 @@
       border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 4px;
     }
 
+    /* Sabitleşen (Sticky) Başlık Alanı */
+    .list-header-sticky {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: #ffffff;
+      padding: 6px 4px;
+      margin-bottom: 6px;
+      border-bottom: 2px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .sticky-approval-title {
+      font-size: 10px;
+      font-weight: 800;
+      color: #2b6cb0;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+      white-space: nowrap;
+      background: #ebf8ff;
+      padding: 3px 6px;
+      border-radius: 4px;
+      border: 1px solid #bee3f8;
+    }
+    .sticky-info-text {
+      font-size: 11px;
+      color: #718096;
+      font-weight: 600;
+    }
+
     /* Kayıt Listesi Stilleri */
     .item-card {
       background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
@@ -104,8 +133,15 @@
       font-size: 10px; font-weight: 700; color: #2b6cb0; background: #ebf8ff;
       padding: 2px 6px; border-radius: 4px; width: fit-content;
     }
-    .item-header { display: flex; align-items: flex-start; gap: 10px; }
-    .item-checkbox { width: 18px; height: 18px; cursor: pointer; margin-top: 2px; }
+    .item-header { display: flex; align-items: flex-start; gap: 12px; }
+    .checkbox-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-width: 55px;
+    }
+    .item-checkbox { width: 20px; height: 20px; cursor: pointer; accent-color: #3182ce; }
     .item-title { font-weight: 600; font-size: 13px; color: #2d3748; flex: 1; }
     .item-date { font-size: 10px; color: #a0aec0; white-space: nowrap; }
     .item-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; border-top: 1px dashed #e2e8f0; padding-top: 6px; }
@@ -152,16 +188,16 @@
       <span class="status-badge">● Canlı Bulut Bağlantısı Aktif</span>
     </p>
 
-    <!-- Üst İki Ana Sekme (Sıralama Değiştirildi) -->
+    <!-- Üst İki Ana Sekme -->
     <div class="main-tabs">
       <button class="main-tab-btn active" onclick="switchMainTab('idareYonetim')">🏛️ İdare Yönetimi</button>
       <button class="main-tab-btn" onclick="switchMainTab('ogretmenControl')">👨‍🏫 Öğretmen Paneli Kontrol</button>
     </div>
 
-    <!-- 1. SEKME: İDARE YÖNETİMİ (Varsayılan Açılış Sayfası) -->
+    <!-- 1. SEKME: İDARE YÖNETİMİ -->
     <div id="tabIdareYonetim">
       
-      <!-- 3 Sayfada Birden Genel Arama Kutusı -->
+      <!-- Arama Kutusu -->
       <input type="text" id="searchInput" class="search-box" placeholder="🔍 Tüm idari kayıtlarda (3 kategoride) ara..." oninput="handleSearch()">
 
       <div class="sub-tabs-header" id="subTabsHeader">
@@ -171,6 +207,12 @@
           <button class="sub-tab-btn" id="btn-teslimAlinan" onclick="switchSubTab('teslimAlinan')">📥 Teslim Alınan Evraklar</button>
         </div>
         <button class="add-btn" onclick="openAddModal()">＋ Ekle</button>
+      </div>
+
+      <!-- Sabit (Sticky) Müdür Onayı Sütun Başlığı -->
+      <div class="list-header-sticky">
+        <span class="sticky-approval-title">☑️ Müdür Onayı</span>
+        <span class="sticky-info-text">İçerik Açıklaması / Detay</span>
       </div>
 
       <!-- Dinamik İçerik Listesi -->
@@ -216,7 +258,6 @@
   </footer>
 
   <script>
-    // Sınıf ve Öğrenci Listesi
     const classes = ['1-A', '1-B', '2-A', '2-B', '3-A', '3-B', '4-A', '4-B'];
     const students = {
       '1-A': ['ALYA DEVRİM AYDIN', 'AYŞE NİSA ECEVİT', 'AZRA ÇATAN', 'EFE MEHMET AKTAN', 'EMRAH SERPEN', 'MEHMET SELİM ÖRDEK', 'MİRAN EMİN DEMİR', 'YAREN BÜLBÜL', 'MİRAÇ ASİL YÖRE', 'ROJHAT ECEVİT', 'MUHAMMED NAIF', 'YUSUF DABDABEN', 'HALE HIRFAN', 'SEM HIRFAN', 'YAKUP EL UGLA', 'VAHID TAHHAN', 'NIDAL NAIF', 'AYŞE HIRFAN', 'MIRAL ELHACTALİB'],
@@ -243,7 +284,6 @@
     function initFirebase() {
       if (!window.db) { setTimeout(initFirebase, 200); return; }
 
-      // Sosyal Etkinlikleri Dinle
       window.onSnapshot(window.collection(window.db, "events"), (snapshot) => {
         events = [];
         snapshot.forEach((doc) => events.push({ id: doc.id, ...doc.data() }));
@@ -251,14 +291,12 @@
         renderOgretmenTab();
       });
 
-      // Sosyal Etkinlik Öğrenci Kayıtlarını Dinle
       window.onSnapshot(window.collection(window.db, "records"), (snapshot) => {
         records = {};
         snapshot.forEach((doc) => records[doc.id] = doc.data().val);
         renderOgretmenTab();
       });
 
-      // İdare Yönetimi Kayıtlarını Dinle
       window.onSnapshot(window.collection(window.db, "idare_records"), (snapshot) => {
         idareRecords = [];
         snapshot.forEach((doc) => idareRecords.push({ id: doc.id, ...doc.data() }));
@@ -266,7 +304,6 @@
       });
     }
 
-    // Ana Tab Değiştirme
     window.switchMainTab = function(tabName) {
       document.querySelectorAll('.main-tab-btn').forEach(b => b.classList.remove('active'));
       if (tabName === 'idareYonetim') {
@@ -284,26 +321,22 @@
       currentSubTab = subTab;
       document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
       document.getElementById(`btn-${subTab}`).classList.add('active');
-      document.getElementById('searchInput').value = ""; // Sekme değiştirince aramayı sıfırla
+      document.getElementById('searchInput').value = "";
       renderIdareTab();
     };
 
-    // Arama Dinleme Fonksiyonu
     window.handleSearch = function() {
       renderIdareTab();
     };
 
-    // İdare Kayıtlarını Ekrana Basma (Arama Özellikli)
     function renderIdareTab() {
       const container = document.getElementById('idareItemsList');
       const searchQuery = document.getElementById('searchInput').value.trim().toLowerCase();
       let filtered = [];
 
       if (searchQuery !== "") {
-        // Arama yapılıyorsa 3 SAYFANIN TAMAMINDA ara
         filtered = idareRecords.filter(r => r.text && r.text.toLowerCase().includes(searchQuery));
       } else {
-        // Arama yoksa sadece seçili kategoriyi göster
         filtered = idareRecords.filter(r => r.category === currentSubTab);
       }
 
@@ -318,7 +351,9 @@
         <div class="item-card">
           ${searchQuery !== "" ? `<span class="item-category-tag">${categoryNames[item.category] || item.category}</span>` : ''}
           <div class="item-header">
-            <input type="checkbox" class="item-checkbox" ${item.approved ? 'checked' : ''} onchange="toggleApproval('${item.id}', this.checked)" title="Müdür Onayı">
+            <div class="checkbox-container">
+              <input type="checkbox" class="item-checkbox" ${item.approved ? 'checked' : ''} onchange="toggleApproval('${item.id}', this.checked)" title="Müdür Onayı Ver/Kaldır">
+            </div>
             <span class="item-title" style="${item.approved ? 'text-decoration: line-through; color:#a0aec0;' : ''}">${item.text}</span>
             <span class="item-date">${item.date || ''}</span>
           </div>
@@ -330,12 +365,10 @@
       `).join('');
     }
 
-    // Onay Kutusu Değiştirme
     window.toggleApproval = async function(id, status) {
       await window.updateDoc(window.doc(window.db, "idare_records", id), { approved: status });
     };
 
-    // Modal Pencere İşlemleri
     window.openAddModal = function() {
       editingId = null;
       document.getElementById('modalTitle').innerText = "Yeni Kayıt Ekle (" + categoryNames[currentSubTab] + ")";
@@ -380,7 +413,6 @@
       }
     };
 
-    // Öğretmen Sekmesi Render Mantığı
     function renderOgretmenTab() {
       const eventSelector = document.getElementById('eventSelector');
       const classGrid = document.getElementById('classGrid');
