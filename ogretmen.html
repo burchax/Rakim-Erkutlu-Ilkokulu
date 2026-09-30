@@ -3,18 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Öğretmen Portalı - Rakım Erkutlu İlkokulu</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>İdareci Paneli - Râkım Erkutlu İlkokulu</title>
 
-  <!-- Firebase SDKs (Compat Modu - Tek Parça ve Güvenli Yükleme) -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-</head>
-<body class="bg-slate-100 text-slate-800 min-h-screen p-4 md:p-6 antialiased">
-  <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden" id="app"></div>
+  <!-- Firebase Bulut Veritabanı Bağlantısı -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  <script>
-    // Firebase Başlatma
     const firebaseConfig = {
       apiKey: "AIzaSyBICjJMMMT3Z1FgsbR2kaUIhNrqvRcg7wM",
       authDomain: "rakim-erkutlu-io-ogretmen.firebaseapp.com",
@@ -24,310 +19,364 @@
       appId: "1:35323173695:web:3031e2107a3e3bf0c8918a"
     };
 
-    let db = null;
-    try {
-      if (!firebase.apps.length) {
-        firebase.initializeApp(firebaseConfig);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.db = db;
+    window.collection = collection;
+    window.onSnapshot = onSnapshot;
+  </script>
+
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f4f7f6;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      width: 100%;
+      max-width: 650px;
+      background: #ffffff;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      margin-top: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #1a365d;
+      font-size: 24px;
+      margin-bottom: 5px;
+    }
+    .subtitle {
+      text-align: center;
+      color: #718096;
+      font-size: 14px;
+      margin-bottom: 25px;
+    }
+    .status-badge {
+      display: inline-block;
+      background-color: #e6fffa;
+      color: #234e52;
+      border: 1px solid #b2f5ea;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-top: 8px;
+    }
+    .section {
+      margin-bottom: 25px;
+    }
+    .section-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: #2b6cb0;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 8px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .event-selector {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 10px;
+      margin-bottom: 15px;
+    }
+    .event-chip {
+      background-color: #edf2f7;
+      border: 1px solid #cbd5e0;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .event-chip.active {
+      background-color: #3182ce;
+      color: #ffffff;
+      border-color: #3182ce;
+    }
+    .class-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+    }
+    .class-card {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .class-card.completed {
+      background-color: #f0fff4;
+      border-color: #9ae6b4;
+    }
+    .class-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .class-name {
+      font-weight: 700;
+      color: #2d3748;
+      font-size: 14px;
+    }
+    .class-percent {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 12px;
+      background-color: #e2e8f0;
+      color: #4a5568;
+    }
+    .class-card.completed .class-percent {
+      background-color: #c6f6d5;
+      color: #22543d;
+    }
+    .progress-bar-bg {
+      width: 100%;
+      height: 6px;
+      background-color: #e2e8f0;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background-color: #3182ce;
+      transition: width 0.4s ease;
+    }
+    .class-card.completed .progress-bar-fill {
+      background-color: #38a169;
+    }
+    details {
+      font-size: 12px;
+      color: #4a5568;
+    }
+    summary {
+      cursor: pointer;
+      font-weight: 600;
+      color: #3182ce;
+    }
+    summary:hover {
+      text-decoration: underline;
+    }
+    .student-list {
+      list-style: none;
+      margin-top: 8px;
+      max-height: 120px;
+      overflow-y: auto;
+      border-left: 2px solid #cbd5e0;
+      padding-left: 8px;
+    }
+    .student-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 3px 0;
+      font-size: 11px;
+    }
+    .status-katilim {
+      color: #2b6cb0;
+      font-weight: 700;
+    }
+    .status-performans {
+      color: #6b46c1;
+      font-weight: 700;
+    }
+    .status-none {
+      color: #a0aec0;
+      font-style: italic;
+    }
+    footer {
+      margin-top: auto;
+      padding-top: 20px;
+      font-size: 12px;
+      color: #a0aec0;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>🏛️ İdareci Paneli</h1>
+    <p class="subtitle">Râkım Erkutlu İlkokulu Yönetim Sistemi <br>
+      <span class="status-badge">● Canlı Bulut Bağlantısı Aktif</span>
+    </p>
+
+    <!-- Sosyal Etkinlik Canlı Takip Modülü -->
+    <div class="section">
+      <div class="section-title">
+        <span>📊 Canlı Sosyal Etkinlik Takibi</span>
+      </div>
+      
+      <p style="font-size: 12px; color: #718096; margin-bottom: 10px;">İncelemek istediğiniz etkinliği seçin:</p>
+      
+      <div class="event-selector" id="eventSelector">
+        <span style="font-size: 12px; color: #a0aec0;">Etkinlikler yükleniyor...</span>
+      </div>
+
+      <div class="class-grid" id="classGrid">
+        <!-- Sınıf Kartları Dinamik Yüklenecek -->
+      </div>
+    </div>
+
+    <!-- Evrak Takip Modülü -->
+    <div class="section">
+      <div class="section-title">
+        <span>📁 Evrak Takip</span>
+      </div>
+      <div style="background-color: #f7fafc; padding: 14px 20px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; color: #a0aec0; font-weight: 600; font-size: 14px;">
+        <span>Gelen / Giden Evrak Kayıt (Yakında)</span>
+        <span>🔒</span>
+      </div>
+    </div>
+
+  </div>
+
+  <footer>
+    © Râkım Erkutlu İlkokulu - İdari Yönetim Portalı
+  </footer>
+
+  <script>
+    const classes = ['1-A', '1-B', '2-A', '2-B', '3-A', '3-B', '4-A', '4-B'];
+    const students = {
+      '1-A': ['ALYA DEVRİM AYDIN', 'AYŞE NİSA ECEVİT', 'AZRA ÇATAN', 'EFE MEHMET AKTAN', 'EMRAH SERPEN', 'MEHMET SELİM ÖRDEK', 'MİRAN EMİN DEMİR', 'YAREN BÜLBÜL', 'MİRAÇ ASİL YÖRE', 'ROJHAT ECEVİT', 'MUHAMMED NAIF', 'YUSUF DABDABEN', 'HALE HIRFAN', 'SEM HIRFAN', 'YAKUP EL UGLA', 'VAHID TAHHAN', 'NIDAL NAIF', 'AYŞE HIRFAN', 'MIRAL ELHACTALİB'],
+      '1-B': ['AHMET ÖZMEN', 'NEFES ÜSTEBAY', 'ALİ YÜCEL', 'ALMİNA MASAL BİLMEDİ', 'ARYA CAYMAZ', 'HAVİN OCAĞ', 'BUĞLEM ADA MATSAR', 'DENİZ ÖZSOY', 'ELANUR UZTEMUR', 'HÜMEYRA DAĞTEKİN', 'MUAZ ALİ KULAŞ', 'YAĞIZ PİRENVİSE', 'FERHAT MURAD', 'NURİ NAİF', 'MUHAMMED MUHAMMED', 'HANİN HERFAN', 'YUSUF ELUKLA', 'İBRAHİM HAMZA', 'MUSTAFA HAMZA', 'NURELHUDE RECEP'],
+      '2-A': ['ABDULLAH BÜLKÜ', 'BERAT KULAŞ', 'DEVRAN ÖZSOY', 'ESİLA ÖRDEK', 'ESLEM YURT', 'MİNA EVRA DÖĞER', 'MUHAMMED EYMEN ÖZSOY', 'YUSUF İVEDİ', 'NİSANUR AKDAĞ', 'BERIVAN ÖRDEK', 'EZGİ ULUTAŞ', 'HÜLYA ÜREYİL', 'MUHAMMED HÜSEYİN DEĞİRMENCİ', 'AHMED ABDULRAHMAN', 'RUSLIN OSMAN', 'MUHAMMED SIDO', 'HATTAB BERGUT', 'RUHEF HAKKI', 'AYŞE ALHALO', 'İLEF AHMED'],
+      '2-B': ['ALPER AYDOĞAN', 'REYYAN ŞANİ', 'HALİL YILDIRIM', 'MEHMET TALHA KURNAZ', 'MUHAMMED SELİM BÜLKÜ', 'ÖYKÜ YILMAZ', 'ELİF KOSKA', 'FATMANUR ÇELİK', 'GÜLŞAH RONAHİ KEVSER ECEVİT', 'KADER KORKMAZ', 'ARAS BULUT YARIMAY', 'ASMİN MATSAR', 'HIRANUR CEMİLE ÇİÇEKLİ', 'TUĞBA ULUTAŞ', 'BEYZANUR BÜLBÜL', 'MUHAMMAD ABDURRAHMAN', 'MAHMUD HAMİDİ', 'AHMED AHMED', 'AHMED KADEK'],
+      '3-A': ['ARYA OKULMUŞ', 'AYSİMA ÖRDEK', 'AYŞE GÜL ORUÇ', 'BURAK ECEVÍT', 'DEFNE SU ÇETİN', 'ELISA SU BAYRAM', 'MUHAMMED EMİR YAĞAR', 'YUSUF CAN ÇİÇEKLİ', 'HÜSEYİN HABEŞ', 'ROYA ALO', 'NUCIN HIDDO', 'BAHAR KADEK', 'HOZAN HACMUSA', 'MEYSA ABDULRAHMAN', 'MUHAMMED KUR'],
+      '3-B': ['ABDULRAHΜΑΝ HANNUŞ', 'HIRA NUR GÖKSU', 'HÜSEYİN DAĞTEKİN', 'MİRAÇ ÖRDEK', 'CANE HANNUŞ', 'NEHİR UZAR', 'POYRAZ ÖZEL', 'ÜZEYİR BÜLKÜ', 'MİRAN KORKMAZ', 'ASEL ÖZMEN', 'MENESA ORAL', 'KAMAR SIDO', 'MIRAL SIDO', 'RULA KADEK', 'YUNUS OSMAN', 'MAHMUD BARGUD'],
+      '4-A': ['BERFİN ÖRDEK', 'EMİR HAKİM ÇELİK', 'HIRANUR AKDAĞ', 'HÜSEYİN EKREM OKULMUŞ', 'İBRAHİM BUĞRA SEÇEN', 'YİĞİT HAKTAN KULACA', 'MUHAMMED EYÜP BİLGİLİ', 'REŞAT CEMAL CAN ECEVİT', 'ESILA AKÇAY', 'HİRANUR ARTIK', 'ZEYNEP TAMİRCAN', 'NAZENİN KARAKAYA', 'MUHAMMED MAMO', 'RONI ALO', 'MUHAMMED HAMMET', 'AHMED MUHAMMED', 'YASEMIN RESO', 'MUHAMMED HAMZA', 'NECAT HAMIDI', 'ILYANA ABDURRAHMAN'],
+      '4-B': ['ALİ EREN SEVEN', 'BERAT ALPASLAN DINDAR', 'BETÜL MATSAR', 'BİLGESU BARAN', 'EREN YARIMAY', 'MEHMET ALİ ERKUŞ', 'ÖMER ALİ KESER', 'SALİH UYGÜL', 'SEYFETTİN MİRAÇ HASATEŞ', 'HALİL İBRAHİM KAYA', 'DERİN OKULMUŞ', 'BERZAN BİLMEDİ', 'YUSUF ÇİÇEKLİ', 'DURU RÜYA ASLAN', 'NEHİR ECEVİT', 'BÜŞRA AYAZ', 'MELISA ECEVİT', 'NAIF HERFAN', 'SEMİR DABDABEN', 'VOLKAN HASAN']
+    };
+
+    let events = [];
+    let records = {};
+    let selectedEventId = null;
+
+    function initFirebase() {
+      if (!window.db) {
+        setTimeout(initFirebase, 200);
+        return;
       }
-      db = firebase.firestore();
-    } catch (e) {
-      console.error("Firebase Başlatılamadı:", e);
-    }
 
-    // Uygulama Durumu (State)
-    let activeTab = 'etkinlik'; // Varsayılan Sosyal Etkinlik
-    let selectedTeacher = null;
-    let selectedTerm = '1. Dönem';
-    let selectedClass = '2-A';
-
-    let teachers = ['YÜKSEL TANRIVERDİ', 'ESRA ALACA', 'İLKAY YEGANE', 'HATİCE KIRKIZ', 'ERGÜL TANRISEVEN', 'GÜLSEHER KONAKLI', 'GÜL UNGAN', 'AYLİN UYGUN'];
-    let classes = ['1-A', '1-B', '2-A', '2-B', '3-A', '3-B', '4-A', '4-B'];
-
-    let docsData = {};
-    let adminApprovals = {};
-    let socialData = {};
-
-    // Firestore Dinleyicileri
-    function initListeners() {
-      if (!db) return;
-
-      db.collection("teacher_docs").onSnapshot(snapshot => {
-        docsData = {};
-        snapshot.forEach(doc => { docsData[doc.id] = doc.data(); });
+      // Etkinlikleri Dinle
+      window.onSnapshot(window.collection(window.db, "events"), (snapshot) => {
+        events = [];
+        snapshot.forEach((doc) => {
+          events.push({ id: doc.id, ...doc.data() });
+        });
+        if (events.length > 0 && !selectedEventId) {
+          selectedEventId = events[0].id;
+        }
         render();
-      }, err => console.warn("teacher_docs hatası:", err));
-
-      db.collection("admin_approvals").onSnapshot(snapshot => {
-        adminApprovals = {};
-        snapshot.forEach(doc => { adminApprovals[doc.id] = doc.data().approved; });
-        render();
-      }, err => console.warn("admin_approvals hatası:", err));
-
-      db.collection("social_activities").onSnapshot(snapshot => {
-        socialData = {};
-        snapshot.forEach(doc => { socialData[doc.id] = doc.data(); });
-        render();
-      }, err => console.warn("social_activities hatası:", err));
-    }
-
-    async function toggleTeacherCheck(docId) {
-      if (!selectedTeacher || !db) return;
-      const current = docsData[docId]?.teacherSubmitted || false;
-      await db.collection("teacher_docs").doc(docId).set({
-        teacherSubmitted: !current,
-        teacherName: selectedTeacher,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
-    }
-
-    async function saveSocialEntry(studentId, field, value) {
-      if (!db) return;
-      const docKey = `${selectedClass}_${studentId}`;
-      await db.collection("social_activities").doc(docKey).set({
-        class: selectedClass,
-        studentId: studentId,
-        [field]: value,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
-    }
-
-    function selectTeacher(name) { selectedTeacher = name; render(); }
-    function selectTerm(term) { selectedTerm = term; render(); }
-    function selectClass(cls) { selectedClass = cls; render(); }
-    function switchTab(tab) { activeTab = tab; render(); }
-
-    const defaultDocs = [
-      { id: '1', title: '1. Zümre Toplantı Tutanağı (Sene Başı)', term: '1. Dönem', deadline: 'Eylül Sonu', target: 'ALL' },
-      { id: '2', title: '1. Veli Toplantı Tutanağı (Sene Başı)', term: '1. Dönem', deadline: 'Eylül Sonu', target: 'ALL' },
-      { id: '3', title: 'Dijital Yıllık Planlar', term: '1. Dönem', deadline: 'Eylül Sonu', target: 'ALL' },
-      { id: '4', title: 'BEP Planları', term: '1. Dönem', deadline: 'Ekim 1.-2. Haftası', target: ['GÜLSEHER KONAKLI', 'GÜL UNGAN'] },
-      { id: '5', title: 'Spor Kulübü Yıllık Çalışma Planı', term: '1. Dönem', deadline: 'Ekim Başı', target: ['ESRA ALACA'] },
-      { id: '6', title: 'Değerler Kulübü Yıllık Çalışma Planı', term: '1. Dönem', deadline: 'Ekim Başı', target: ['ERGÜL TANRISEVEN'] },
-      { id: '7', title: 'Kütüphanecilik Kulübü Yıllık Çalışma Planı', term: '1. Dönem', deadline: 'Ekim Başı', target: ['GÜL UNGAN'] },
-      { id: '8', title: 'Görsel Sanatlar Kulübü Yıllık Çalışma Planı', term: '1. Dönem', deadline: 'Ekim Başı', target: ['AYLİN UYGUN'] },
-      { id: '9', title: 'Kızılay ve Kan Bağışı Kulübü Yıllık Çalışma Planı', term: '1. Dönem', deadline: 'Ekim Başı', target: ['İLKAY YEGANE'] },
-      { id: '10', title: 'Yeşilay Kulübü Yıllık Çalışma Planı', term: '1. Dönem', deadline: 'Ekim Başı', target: ['HATİCE KIRKIZ'] },
-      { id: '11', title: 'Sağlık, Temizlik ve Beslenme Kulübü Yıllık Çalışma Planı', term: '1. Dönem', deadline: 'Ekim Başı', target: ['YÜKSEL TANRIVERDİ'] },
-      { id: '12', title: 'Afet Hazırlık ve Sivil Savunma Kulübü Yıllık Çalışma Planı', term: '1. Dönem', deadline: 'Ekim Başı', target: ['GÜLSEHER KONAKLI'] },
-      { id: '13', title: 'İlköğretim Haftası Dosya ve Pano Hazırlığı', term: '1. Dönem', deadline: 'Eylül 3. Haftası', target: ['YÜKSEL TANRIVERDİ'] },
-      { id: '14', title: 'Hayvanları Koruma Günü Dosya ve Pano Hazırlığı', term: '1. Dönem', deadline: '4 Ekim', target: ['ESRA ALACA'] },
-      { id: '15', title: 'Cumhuriyet Bayramı Kutlama Programı Dosya Hazırlığı', term: '1. Dönem', deadline: '29 Ekim', target: 'ALL' },
-      { id: '16', title: 'Kızılay Haftası Dosya ve Pano Hazırlığı', term: '1. Dönem', deadline: '29 Ekim - 4 Kasım', target: ['İLKAY YEGANE'] },
-      { id: '17', title: 'Atatürk Haftası Anma Programı Dosya Hazırlığı', term: '1. Dönem', deadline: '10-16 Kasım', target: 'ALL' },
-      { id: '18', title: 'Dünya Engelliler Günü Dosya ve Pano Hazırlığı', term: '1. Dönem', deadline: '3 Aralık', target: ['HATİCE KIRKIZ'] },
-      { id: '19', title: 'İnsan Hakları ve Demokrasi Haftası Dosya ve Pano Hazırlığı', term: '1. Dönem', deadline: '10 Aralık Haftası', target: ['ESRA ALACA'] },
-      { id: '20', title: 'Tutum, Yatırım ve Türk Malları Haftası Etkinlik Dosyası', term: '1. Dönem', deadline: '12-18 Aralık', target: 'ALL' },
-      { id: '21', title: 'Enerji Tasarrufu Haftası Dosya ve Pano Hazırlığı', term: '1. Dönem', deadline: 'Ocak 2. Haftası', target: ['ERGÜL TANRISEVEN'] },
-
-      { id: '22', title: '2. Zümre Toplantı Tutanağı (2. Dönem Başı)', term: '2. Dönem', deadline: 'Şubat Başı', target: 'ALL' },
-      { id: '23', title: '2. Veli Toplantı Tutanağı (2. Dönem Başı)', term: '2. Dönem', deadline: 'Şubat Başı', target: 'ALL' },
-      { id: '24', title: 'Sivil Savunma Günü Dosya ve Pano Hazırlığı', term: '2. Dönem', deadline: '28 Şubat', target: ['GÜLSEHER KONAKLI', 'YÜKSEL TANRIVERDİ'] },
-      { id: '25', title: 'Yeşilay Haftası Dosya ve Pano Hazırlığı', term: '2. Dönem', deadline: '1 Mart Haftası', target: ['HATİCE KIRKIZ'] },
-      { id: '26', title: 'İstiklâl Marşı\'nın Kabulü ve M. Akif Ersoy\'u Anma Programı', term: '2. Dönem', deadline: '12 Mart', target: ['İLKAY YEGANE', 'GÜL UNGAN'] },
-      { id: '27', title: 'Tüketiciyi Koruma Haftası Dosya ve Pano Hazırlığı', term: '2. Dönem', deadline: '15-21 Mart', target: ['AYLİN UYGUN'] },
-      { id: '28', title: 'Çanakkale Zaferi ve Şehitleri Anma Programı', term: '2. Dönem', deadline: '18 Mart', target: ['ESRA ALACA', 'ERGÜL TANRISEVEN'] },
-      { id: '29', title: 'Orman Haftası Dosya ve Pano Hazırlığı', term: '2. Dönem', deadline: '21-26 Mart', target: ['GÜLSEHER KONAKLI'] },
-      { id: '30', title: 'Kütüphaneler Haftası Dosya ve Pano Hazırlığı', term: '2. Dönem', deadline: 'Mart Son Pazartesi', target: ['GÜL UNGAN'] },
-      { id: '31', title: '23 Nisan Ulusal Egemenlik ve Çocuk Bayramı Programı', term: '2. Dönem', deadline: '23 Nisan', target: 'ALL' },
-      { id: '32', title: 'Trafik ve İlk Yardım Haftası Dosya ve Pano Hazırlığı', term: '2. Dönem', deadline: 'Mayıs İlk Haftası', target: ['AYLİN UYGUN'] },
-      { id: '33', title: '19 Mayıs Atatürk\'ü Anma ve Gençlik ve Spor Bayramı Programı', term: '2. Dönem', deadline: '19 Mayıs', target: 'ALL' },
-
-      { id: '34', title: '3. Zümre Toplantı Tutanağı (Sene Sonu)', term: 'Yıl Sonu', deadline: 'Haziran Sonu', target: 'ALL' },
-      { id: '35', title: '3. Veli Toplantı Tutanağı (Sene Sonu)', term: 'Yıl Sonu', deadline: 'Haziran Sonu', target: 'ALL' },
-      { id: '36', title: 'Kulüp Yıl Sonu Faaliyet Raporu', term: 'Yıl Sonu', deadline: 'Haziran Sonu', target: 'ALL' },
-      { id: '37', title: 'Ders Kesim Raporu', term: 'Yıl Sonu', deadline: 'Haziran Sonu', target: 'ALL' },
-      { id: '38', title: 'Sınıf Rehberlik Yıl Sonu Çalışma Raporu', term: 'Yıl Sonu', deadline: 'Haziran Sonu', target: 'ALL' }
-    ];
-
-    function render() {
-      const app = document.getElementById('app');
-
-      app.innerHTML = `
-        <div class="bg-gradient-to-r from-blue-900 to-indigo-900 p-6 text-white flex justify-between items-center">
-          <div>
-            <span class="text-xs uppercase tracking-widest text-indigo-300 font-semibold">Rakım Erkutlu İlkokulu</span>
-            <h1 class="text-2xl font-black">🏫 Öğretmen Yönetim Portalı</h1>
-          </div>
-          <div class="flex gap-2 bg-blue-950/60 p-1.5 rounded-xl border border-blue-700/50">
-            <button onclick="switchTab('etkinlik')" class="px-4 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === 'etkinlik' ? 'bg-indigo-600 text-white shadow' : 'text-slate-300 hover:text-white'}">📊 Sosyal Etkinlik Takip</button>
-            <button onclick="switchTab('evrak')" class="px-4 py-2 text-xs font-bold rounded-lg transition-all ${activeTab === 'evrak' ? 'bg-indigo-600 text-white shadow' : 'text-slate-300 hover:text-white'}">📁 Evrak Takip</button>
-          </div>
-        </div>
-
-        <div class="p-6">
-          ${activeTab === 'etkinlik' ? renderEtkinlikTab() : renderEvrakTab()}
-        </div>
-      `;
-    }
-
-    function renderEtkinlikTab() {
-      const sampleStudents = [
-        { id: '101', no: '12', name: 'Ahmet Yılmaz' },
-        { id: '102', no: '24', name: 'Ayşe Kaya' },
-        { id: '103', no: '35', name: 'Mehmet Demir' },
-        { id: '104', no: '48', name: 'Zeynep Çelik' },
-        { id: '105', no: '52', name: 'Can Öztürk' }
-      ];
-
-      return `
-        <div class="mb-6">
-          <h2 class="text-sm font-extrabold text-slate-500 uppercase tracking-wider mb-3">Sınıf Seçimi</h2>
-          <div class="flex flex-wrap gap-2">
-            ${classes.map(cls => `
-              <button onclick="selectClass('${cls}')" class="px-4 py-2 text-xs font-extrabold rounded-xl border transition-all ${selectedClass === cls ? 'bg-indigo-600 text-white border-indigo-600 shadow' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}">
-                🏫 ${cls}
-              </button>
-            `).join('')}
-          </div>
-        </div>
-
-        <div class="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 mb-6 flex justify-between items-center">
-          <div>
-            <span class="text-xs font-bold text-indigo-500 uppercase">Seçili Sınıf:</span>
-            <h3 class="text-lg font-black text-indigo-900">${selectedClass} Sınıfı Sosyal Etkinlik Giriş Formu</h3>
-          </div>
-          <span class="text-xs bg-indigo-200 text-indigo-800 font-bold px-3 py-1 rounded-full">2026 - 2027 Dönemi</span>
-        </div>
-
-        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-          <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse">
-              <thead class="bg-slate-100 border-b border-slate-200">
-                <tr>
-                  <th class="p-3 font-bold text-xs text-slate-600 uppercase w-16 text-center">No</th>
-                  <th class="p-3 font-bold text-xs text-slate-600 uppercase w-48">Öğrenci Adı Soyadı</th>
-                  <th class="p-3 font-bold text-xs text-slate-600 uppercase">Atandığı Sosyal Kulüp</th>
-                  <th class="p-3 font-bold text-xs text-slate-600 uppercase">Tamamladığı Etkinlik / Görev</th>
-                  <th class="p-3 font-bold text-xs text-slate-600 uppercase w-28 text-center">Durum</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100">
-                ${sampleStudents.map(student => {
-                  const docKey = `${selectedClass}_${student.id}`;
-                  const studentData = socialData[docKey] || {};
-
-                  return `
-                    <tr class="hover:bg-slate-50 transition-colors">
-                      <td class="p-3 text-center font-bold text-slate-500 text-xs">${student.no}</td>
-                      <td class="p-3 font-bold text-slate-800 text-sm">${student.name}</td>
-                      <td class="p-3">
-                        <select onchange="saveSocialEntry('${student.id}', 'club', this.value)" class="w-full text-xs font-semibold p-2 border border-slate-200 rounded-lg bg-white focus:ring-2 focus:ring-indigo-500 outline-none">
-                          <option value="">-- Kulüp Seçiniz --</option>
-                          <option value="Spor Kulübü" ${studentData.club === 'Spor Kulübü' ? 'selected' : ''}>Spor Kulübü</option>
-                          <option value="Değerler Kulübü" ${studentData.club === 'Değerler Kulübü' ? 'selected' : ''}>Değerler Kulübü</option>
-                          <option value="Kütüphanecilik Kulübü" ${studentData.club === 'Kütüphanecilik Kulübü' ? 'selected' : ''}>Kütüphanecilik Kulübü</option>
-                          <option value="Görsel Sanatlar Kulübü" ${studentData.club === 'Görsel Sanatlar Kulübü' ? 'selected' : ''}>Görsel Sanatlar Kulübü</option>
-                          <option value="Kızılay ve Kan Bağışı Kulübü" ${studentData.club === 'Kızılay ve Kan Bağışı Kulübü' ? 'selected' : ''}>Kızılay ve Kan Bağışı Kulübü</option>
-                          <option value="Yeşilay Kulübü" ${studentData.club === 'Yeşilay Kulübü' ? 'selected' : ''}>Yeşilay Kulübü</option>
-                          <option value="Sağlık, Temizlik ve Beslenme Kulübü" ${studentData.club === 'Sağlık, Temizlik ve Beslenme Kulübü' ? 'selected' : ''}>Sağlık, Temizlik Kulübü</option>
-                          <option value="Afet Hazırlık ve Sivil Savunma Kulübü" ${studentData.club === 'Afet Hazırlık ve Sivil Savunma Kulübü' ? 'selected' : ''}>Afet Hazırlık Kulübü</option>
-                        </select>
-                      </td>
-                      <td class="p-3">
-                        <input type="text" value="${studentData.activity \vert{}\vert{} ''}" onblur="saveSocialEntry('${student.id}', 'activity', this.value)" placeholder="Etkinlik adını yazınız..." class="w-full text-xs p-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
-                      </td>
-                      <td class="p-3 text-center">
-                        <select onchange="saveSocialEntry('${student.id}', 'status', this.value)" class="text-xs font-bold p-1.5 border border-slate-200 rounded-lg outline-none ${studentData.status === 'Tamamlandı' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}">
-                          <option value="Devam Ediyor" ${studentData.status !== 'Tamamlandı' ? 'selected' : ''}>Devam Ediyor</option>
-                          <option value="Tamamlandı" ${studentData.status === 'Tamamlandı' ? 'selected' : ''}>Tamamlandı</option>
-                        </select>
-                      </td>
-                    </tr>
-                  `;
-                }).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      `;
-    }
-
-    function renderEvrakTab() {
-      if (!selectedTeacher) {
-        return `
-          <div class="text-center py-8">
-            <h2 class="text-lg font-bold text-slate-700 mb-4">Lütfen İsminizi Seçiniz</h2>
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-              ${teachers.map(t => `
-                <button onclick="selectTeacher('${t}')" class="p-4 bg-slate-50 border border-slate-200 hover:border-indigo-500 hover:bg-indigo-50/50 rounded-xl font-bold text-slate-700 text-sm transition-all text-center">
-                  👨‍🏫 ${t}
-                </button>
-              `).join('')}
-            </div>
-          </div>
-        `;
-      }
-
-      const filteredDocs = defaultDocs.filter(d => {
-        const matchesTerm = d.term === selectedTerm;
-        const matchesTeacher = d.target === 'ALL' || (Array.isArray(d.target) && d.target.includes(selectedTeacher));
-        return matchesTerm && matchesTeacher;
       });
 
-      return `
-        <div class="flex justify-between items-center mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200">
-          <div>
-            <span class="text-xs text-slate-500 font-bold uppercase">Aktif Öğretmen:</span>
-            <h2 class="text-lg font-black text-indigo-900">${selectedTeacher}</h2>
-          </div>
-          <button onclick="selectTeacher(null)" class="text-xs text-indigo-600 hover:underline font-bold">← Başka Öğretmen Seç</button>
-        </div>
-
-        <div class="flex gap-2 mb-6 border-b border-slate-200 pb-3">
-          ${['1. Dönem', '2. Dönem', 'Yıl Sonu'].map(term => `
-            <button onclick="selectTerm('${term}')" class="px-5 py-2.5 text-xs font-bold rounded-xl transition-all ${selectedTerm === term ? 'bg-indigo-600 text-white shadow-md' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}">
-              ${term}
-            </button>
-          `).join('')}
-        </div>
-
-        <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
-          <div class="overflow-x-auto max-h-[500px]">
-            <table class="w-full text-left border-collapse">
-              <thead class="bg-slate-100 sticky top-0 z-10 border-b border-slate-200">
-                <tr>
-                  <th class="p-3 text-center w-28 bg-slate-100 font-bold text-xs text-slate-600 uppercase tracking-wider">Teslim Edildi</th>
-                  <th class="p-3 font-bold text-xs text-slate-600 uppercase tracking-wider">Evrak / Görev Adı</th>
-                  <th class="p-3 font-bold text-xs text-slate-600 uppercase tracking-wider w-36">Son Tarih</th>
-                  <th class="p-3 font-bold text-xs text-slate-600 uppercase tracking-wider w-32 text-right">İdare Onayı</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100">
-                ${filteredDocs.length === 0 ? `
-                  <tr><td colspan="4" class="p-6 text-center text-xs text-slate-400">Bu dönem için tanımlanmış evrak bulunmamaktadır.</td></tr>
-                ` : filteredDocs.map(docItem => {
-                  const docKey = `${selectedTeacher}_${docItem.id}`;
-                  const isSubmitted = docsData[docKey]?.teacherSubmitted || false;
-                  const isApproved = adminApprovals[docKey] || false;
-
-                  return `
-                    <tr class="transition-colors ${isApproved ? 'bg-emerald-100/80 font-medium' : isSubmitted ? 'bg-amber-50/60' : 'hover:bg-slate-50'}">
-                      <td class="p-3 text-center">
-                        <input type="checkbox" onchange="toggleTeacherCheck('${docKey}')" ${isSubmitted ? 'checked' : ''} class="w-5 h-5 accent-indigo-600 rounded cursor-pointer">
-                      </td>
-                      <td class="p-3 text-sm font-semibold text-slate-800">${docItem.title}</td>
-                      <td class="p-3 text-xs font-semibold text-slate-500">${docItem.deadline}</td>
-                      <td class="p-3 text-right">
-                        ${isApproved 
-                          ? '<span class="inline-block bg-emerald-600 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">✓ Onaylandı</span>' 
-                          : isSubmitted 
-                          ? '<span class="inline-block bg-amber-500 text-white text-[10px] font-extrabold px-2 py-0.5 rounded-full">İdare Bekleniyor</span>' 
-                          : '<span class="inline-block bg-slate-200 text-slate-500 text-[10px] font-bold px-2 py-0.5 rounded-full">Teslim Edilmedi</span>'}
-                      </td>
-                    </tr>
-                  `;
-                }).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      `;
+      // Kayıtları Dinle
+      window.onSnapshot(window.collection(window.db, "records"), (snapshot) => {
+        records = {};
+        snapshot.forEach((doc) => {
+          records[doc.id] = doc.data().val;
+        });
+        render();
+      });
     }
 
-    // İlk açılışta hemen çiz
-    render();
-    // Dinleyicileri çalıştır
-    initListeners();
+    function selectEvent(id) {
+      selectedEventId = id;
+      render();
+    }
+    window.selectEvent = selectEvent;
+
+    function render() {
+      const eventSelector = document.getElementById('eventSelector');
+      const classGrid = document.getElementById('classGrid');
+
+      if (events.length === 0) {
+        eventSelector.innerHTML = '<span style="font-size: 12px; color: #a0aec0;">Henüz öğretmenler tarafından eklenmiş bir etkinlik yok.</span>';
+        classGrid.innerHTML = '';
+        return;
+      }
+
+      // Etkinlik Butonları Doldur
+      eventSelector.innerHTML = events.map(ev => `
+        <button onclick="selectEvent('${ev.id}')" class="event-chip ${selectedEventId === ev.id ? 'active' : ''}">
+          ${ev.name} (${ev.date})
+        </button>
+      `).join('');
+
+      const selectedEventObj = events.find(e => e.id === selectedEventId);
+
+      if (!selectedEventObj) {
+        classGrid.innerHTML = '';
+        return;
+      }
+
+      // Sınıf Kartlarını Doldur
+      classGrid.innerHTML = classes.map(c => {
+        const classStudents = students[c] || [];
+        let completedCount = 0;
+
+        classStudents.forEach(st => {
+          if (records[`${c}_${selectedEventObj.name}_${st}`]) completedCount++;
+        });
+
+        const percent = classStudents.length > 0 ? Math.round((completedCount / classStudents.length) * 100) : 0;
+        const isAllDone = completedCount === classStudents.length && classStudents.length > 0;
+
+        return `
+          <div class="class-card ${isAllDone ? 'completed' : ''}">
+            <div class="class-card-header">
+              <span class="class-name">${c} Sınıfı</span>
+              <span class="class-percent">${completedCount}/${classStudents.length} (%${percent})</span>
+            </div>
+            
+            <div class="progress-bar-bg">
+              <div class="progress-bar-fill" style="width: ${percent}%;"></div>
+            </div>
+
+            <details>
+              <summary>Öğrenci Detayları</summary>
+              <ul class="student-list">
+                ${classStudents.map(st => {
+                  const val = records[`${c}_${selectedEventObj.name}_${st}`];
+                  let statusHtml = '<span class="status-none">Girilmedi</span>';
+                  if (val === 'katilim') statusHtml = '<span class="status-katilim">Katılım</span>';
+                  if (val === 'performans') statusHtml = '<span class="status-performans">Performans</span>';
+
+                  return `
+                    <li class="student-item">
+                      <span>${st}</span>${statusHtml}
+                    </li>
+                  `;
+                }).join('')}
+              </ul>
+            </details>
+          </div>
+        `;
+      }).join('');
+    }
+
+    initFirebase();
   </script>
+
 </body>
 </html>
