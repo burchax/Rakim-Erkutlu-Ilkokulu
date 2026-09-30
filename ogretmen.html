@@ -9,7 +9,7 @@
   <!-- Firebase Bağlantısı -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBICjJMMMT3Z1FgsbR2kaUIhNrqvRcg7wM",
@@ -29,18 +29,17 @@
       window.onSnapshot = onSnapshot;
       window.doc = doc;
       window.setDoc = setDoc;
-      window.deleteDoc = deleteDoc;
+
+      if (window.initAppListeners) {
+        window.initAppListeners();
+      }
     } catch (e) {
       console.error("Firebase başlatma hatası:", e);
     }
   </script>
 </head>
 <body class="bg-slate-100 text-slate-800 min-h-screen p-4 md:p-6 antialiased">
-  <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden" id="app">
-    <div class="p-12 text-center text-slate-500 font-bold">
-      ⏳ Uygulama Yükleniyor, Lütfen Bekleyiniz...
-    </div>
-  </div>
+  <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden" id="app"></div>
 
   <script>
     let activeTab = 'etkinlik'; 
@@ -55,36 +54,31 @@
     let adminApprovals = {};
     let socialData = {};
 
-    function initFirebase() {
-      if (!window.db) {
-        setTimeout(initFirebase, 200);
-        return;
-      }
+    window.initAppListeners = function() {
+      if (!window.db) return;
 
       try {
         window.onSnapshot(window.collection(window.db, "teacher_docs"), (snapshot) => {
           docsData = {};
           snapshot.forEach(docSnap => { docsData[docSnap.id] = docSnap.data(); });
           render();
-        });
+        }, err => console.warn("teacher_docs okuma uyarısı:", err));
 
         window.onSnapshot(window.collection(window.db, "admin_approvals"), (snapshot) => {
           adminApprovals = {};
           snapshot.forEach(docSnap => { adminApprovals[docSnap.id] = docSnap.data().approved; });
           render();
-        });
+        }, err => console.warn("admin_approvals okuma uyarısı:", err));
 
         window.onSnapshot(window.collection(window.db, "social_activities"), (snapshot) => {
           socialData = {};
           snapshot.forEach(docSnap => { socialData[docSnap.id] = docSnap.data(); });
           render();
-        });
+        }, err => console.warn("social_activities okuma uyarısı:", err));
       } catch (err) {
-        console.error("Veri çekme hatası:", err);
+        console.error("Firebase dinleyici hatası:", err);
       }
-      
-      render();
-    }
+    };
 
     async function toggleTeacherCheck(docId) {
       if (!selectedTeacher || !window.db) return;
@@ -349,9 +343,11 @@
       `;
     }
 
-    // İlk çizimi hemen yap, Firebase gelince güncellenecek
+    // Arayüzü anında yükle
     render();
-    initFirebase();
+    if (window.initAppListeners) {
+      window.initAppListeners();
+    }
   </script>
 </body>
 </html>
