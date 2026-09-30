@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>İdareci Paneli - Râkım Erkutlu İlkokulu</title>
+  <title>Öğretmen Portalı - Rakım Erkutlu İlkokulu</title>
 
   <!-- Firebase Bulut Veritabanı Bağlantısı -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBICjJMMMT3Z1FgsbR2kaUIhNrqvRcg7wM",
@@ -19,20 +19,22 @@
       appId: "1:35323173695:web:3031e2107a3e3bf0c8918a"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    try {
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
 
-    window.db = db;
-    window.collection = collection;
-    window.onSnapshot = onSnapshot;
+      window.db = db;
+      window.collection = collection;
+      window.onSnapshot = onSnapshot;
+      window.doc = doc;
+      window.setDoc = setDoc;
+    } catch (e) {
+      console.error("Firebase bağlantı hatası:", e);
+    }
   </script>
 
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       background-color: #f4f7f6;
@@ -41,222 +43,121 @@
       flex-direction: column;
       align-items: center;
       min-height: 100vh;
-      padding: 20px;
+      padding: 15px;
     }
     .container {
       width: 100%;
-      max-width: 650px;
+      max-width: 800px;
       background: #ffffff;
-      padding: 25px;
+      padding: 20px;
       border-radius: 12px;
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-      margin-top: 20px;
+      margin-top: 10px;
     }
-    h1 {
-      text-align: center;
-      color: #1a365d;
-      font-size: 24px;
-      margin-bottom: 5px;
-    }
-    .subtitle {
-      text-align: center;
-      color: #718096;
-      font-size: 14px;
-      margin-bottom: 25px;
-    }
-    .status-badge {
-      display: inline-block;
-      background-color: #e6fffa;
-      color: #234e52;
-      border: 1px solid #b2f5ea;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 11px;
-      font-weight: 700;
-      margin-top: 8px;
-    }
-    .section {
-      margin-bottom: 25px;
-    }
-    .section-title {
-      font-size: 16px;
-      font-weight: 600;
-      color: #2b6cb0;
-      border-bottom: 2px solid #e2e8f0;
-      padding-bottom: 8px;
-      margin-bottom: 15px;
+    .header-bar {
       display: flex;
+      justify-content: space-between;
       align-items: center;
-      gap: 8px;
+      border-bottom: 2px solid #e2e8f0;
+      padding-bottom: 15px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 10px;
     }
-    .event-selector {
-      display: flex;
-      gap: 8px;
-      overflow-x: auto;
-      padding-bottom: 10px;
-      margin-bottom: 15px;
-    }
-    .event-chip {
-      background-color: #edf2f7;
-      border: 1px solid #cbd5e0;
+    h1 { color: #1a365d; font-size: 20px; }
+    .nav-tabs { display: flex; gap: 8px; }
+    .tab-btn {
       padding: 8px 14px;
       border-radius: 8px;
+      border: 1px solid #cbd5e0;
+      background: #edf2f7;
+      color: #4a5568;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      background: #3182ce;
+      color: #fff;
+      border-color: #3182ce;
+    }
+    .chip-container {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      margin-bottom: 15px;
+    }
+    .chip {
+      background: #f7fafc;
+      border: 1px solid #e2e8f0;
+      padding: 6px 12px;
+      border-radius: 6px;
       font-size: 12px;
       font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
-      transition: all 0.2s;
     }
-    .event-chip.active {
-      background-color: #3182ce;
-      color: #ffffff;
-      border-color: #3182ce;
+    .chip.active {
+      background: #2b6cb0;
+      color: #fff;
+      border-color: #2b6cb0;
     }
-    .class-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 12px;
-    }
-    .class-card {
-      background-color: #f8fafc;
-      border: 1px solid #e2e8f0;
-      border-radius: 8px;
-      padding: 12px;
-    }
-    .class-card.completed {
-      background-color: #f0fff4;
-      border-color: #9ae6b4;
-    }
-    .class-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 8px;
-    }
-    .class-name {
-      font-weight: 700;
-      color: #2d3748;
-      font-size: 14px;
-    }
-    .class-percent {
-      font-size: 11px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 12px;
-      background-color: #e2e8f0;
-      color: #4a5568;
-    }
-    .class-card.completed .class-percent {
-      background-color: #c6f6d5;
-      color: #22543d;
-    }
-    .progress-bar-bg {
+    table {
       width: 100%;
-      height: 6px;
-      background-color: #e2e8f0;
-      border-radius: 4px;
-      overflow: hidden;
-      margin-bottom: 10px;
-    }
-    .progress-bar-fill {
-      height: 100%;
-      background-color: #3182ce;
-      transition: width 0.4s ease;
-    }
-    .class-card.completed .progress-bar-fill {
-      background-color: #38a169;
-    }
-    details {
+      border-collapse: collapse;
+      margin-top: 10px;
       font-size: 12px;
-      color: #4a5568;
     }
-    summary {
-      cursor: pointer;
-      font-weight: 600;
-      color: #3182ce;
+    th, td {
+      border: 1px solid #e2e8f0;
+      padding: 8px 10px;
+      text-align: left;
     }
-    summary:hover {
-      text-decoration: underline;
-    }
-    .student-list {
-      list-style: none;
-      margin-top: 8px;
-      max-height: 120px;
-      overflow-y: auto;
-      border-left: 2px solid #cbd5e0;
-      padding-left: 8px;
-    }
-    .student-item {
-      display: flex;
-      justify-content: space-between;
-      padding: 3px 0;
+    th { background: #edf2f7; color: #2d3748; }
+    select, input[type="text"] {
+      width: 100%;
+      padding: 5px;
+      border-radius: 4px;
+      border: 1px solid #cbd5e0;
       font-size: 11px;
     }
-    .status-katilim {
-      color: #2b6cb0;
-      font-weight: 700;
-    }
-    .status-performans {
-      color: #6b46c1;
-      font-weight: 700;
-    }
-    .status-none {
-      color: #a0aec0;
-      font-style: italic;
-    }
-    footer {
-      margin-top: auto;
-      padding-top: 20px;
-      font-size: 12px;
-      color: #a0aec0;
-      text-align: center;
-    }
+    footer { margin-top: auto; padding-top: 20px; font-size: 11px; color: #a0aec0; text-align: center; }
   </style>
 </head>
 <body>
 
   <div class="container">
-    <h1>🏛️ İdareci Paneli</h1>
-    <p class="subtitle">Râkım Erkutlu İlkokulu Yönetim Sistemi <br>
-      <span class="status-badge">● Canlı Bulut Bağlantısı Aktif</span>
-    </p>
-
-    <!-- Sosyal Etkinlik Canlı Takip Modülü -->
-    <div class="section">
-      <div class="section-title">
-        <span>📊 Canlı Sosyal Etkinlik Takibi</span>
+    <div class="header-bar">
+      <div>
+        <h1>🏫 Öğretmen Portalı</h1>
+        <span style="font-size: 11px; color: #718096;">Rakım Erkutlu İlkokulu</span>
       </div>
-      
-      <p style="font-size: 12px; color: #718096; margin-bottom: 10px;">İncelemek istediğiniz etkinliği seçin:</p>
-      
-      <div class="event-selector" id="eventSelector">
-        <span style="font-size: 12px; color: #a0aec0;">Etkinlikler yükleniyor...</span>
-      </div>
-
-      <div class="class-grid" id="classGrid">
-        <!-- Sınıf Kartları Dinamik Yüklenecek -->
+      <!-- Ana Sekmeler: 1. Sosyal Etkinlik, 2. Evrak Takip -->
+      <div class="nav-tabs">
+        <button onclick="switchTab('etkinlik')" class="tab-btn" id="btn-etkinlik">📊 Sosyal Etkinlik Takip</button>
+        <button onclick="switchTab('evrak')" class="tab-btn" id="btn-evrak">📁 Evrak Takip</button>
       </div>
     </div>
 
-    <!-- Evrak Takip Modülü -->
-    <div class="section">
-      <div class="section-title">
-        <span>📁 Evrak Takip</span>
-      </div>
-      <div style="background-color: #f7fafc; padding: 14px 20px; border-radius: 8px; border: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; color: #a0aec0; font-weight: 600; font-size: 14px;">
-        <span>Gelen / Giden Evrak Kayıt (Yakında)</span>
-        <span>🔒</span>
-      </div>
-    </div>
-
+    <!-- Modül Alanı -->
+    <div id="content-area"></div>
   </div>
 
   <footer>
-    © Râkım Erkutlu İlkokulu - İdari Yönetim Portalı
+    © Rakım Erkutlu İlkokulu - Öğretmen Yönetim Portalı
   </footer>
 
   <script>
+    let activeTab = 'etkinlik'; // Varsayılan Sosyal Etkinlik
+    let selectedClass = '2-A';
+    let selectedTeacher = null;
+    let selectedTerm = '1. Dönem';
+
     const classes = ['1-A', '1-B', '2-A', '2-B', '3-A', '3-B', '4-A', '4-B'];
+    const teachers = ['YÜKSEL TANRIVERDİ', 'ESRA ALACA', 'İLKAY YEGANE', 'HATİCE KIRKIZ', 'ERGÜL TANRISEVEN', 'GÜLSEHER KONAKLI', 'GÜL UNGAN', 'AYLİN UYGUN'];
+    
     const students = {
       '1-A': ['ALYA DEVRİM AYDIN', 'AYŞE NİSA ECEVİT', 'AZRA ÇATAN', 'EFE MEHMET AKTAN', 'EMRAH SERPEN', 'MEHMET SELİM ÖRDEK', 'MİRAN EMİN DEMİR', 'YAREN BÜLBÜL', 'MİRAÇ ASİL YÖRE', 'ROJHAT ECEVİT', 'MUHAMMED NAIF', 'YUSUF DABDABEN', 'HALE HIRFAN', 'SEM HIRFAN', 'YAKUP EL UGLA', 'VAHID TAHHAN', 'NIDAL NAIF', 'AYŞE HIRFAN', 'MIRAL ELHACTALİB'],
       '1-B': ['AHMET ÖZMEN', 'NEFES ÜSTEBAY', 'ALİ YÜCEL', 'ALMİNA MASAL BİLMEDİ', 'ARYA CAYMAZ', 'HAVİN OCAĞ', 'BUĞLEM ADA MATSAR', 'DENİZ ÖZSOY', 'ELANUR UZTEMUR', 'HÜMEYRA DAĞTEKİN', 'MUAZ ALİ KULAŞ', 'YAĞIZ PİRENVİSE', 'FERHAT MURAD', 'NURİ NAİF', 'MUHAMMED MUHAMMED', 'HANİN HERFAN', 'YUSUF ELUKLA', 'İBRAHİM HAMZA', 'MUSTAFA HAMZA', 'NURELHUDE RECEP'],
@@ -268,9 +169,8 @@
       '4-B': ['ALİ EREN SEVEN', 'BERAT ALPASLAN DINDAR', 'BETÜL MATSAR', 'BİLGESU BARAN', 'EREN YARIMAY', 'MEHMET ALİ ERKUŞ', 'ÖMER ALİ KESER', 'SALİH UYGÜL', 'SEYFETTİN MİRAÇ HASATEŞ', 'HALİL İBRAHİM KAYA', 'DERİN OKULMUŞ', 'BERZAN BİLMEDİ', 'YUSUF ÇİÇEKLİ', 'DURU RÜYA ASLAN', 'NEHİR ECEVİT', 'BÜŞRA AYAZ', 'MELISA ECEVİT', 'NAIF HERFAN', 'SEMİR DABDABEN', 'VOLKAN HASAN']
     };
 
-    let events = [];
-    let records = {};
-    let selectedEventId = null;
+    let socialData = {};
+    let docsData = {};
 
     function initFirebase() {
       if (!window.db) {
@@ -278,103 +178,135 @@
         return;
       }
 
-      // Etkinlikleri Dinle
-      window.onSnapshot(window.collection(window.db, "events"), (snapshot) => {
-        events = [];
-        snapshot.forEach((doc) => {
-          events.push({ id: doc.id, ...doc.data() });
+      // Sosyal Etkinlik Verilerini Dinle
+      try {
+        window.onSnapshot(window.collection(window.db, "social_activities"), (snapshot) => {
+          socialData = {};
+          snapshot.forEach(d => { socialData[d.id] = d.data(); });
+          render();
         });
-        if (events.length > 0 && !selectedEventId) {
-          selectedEventId = events[0].id;
-        }
-        render();
-      });
+      } catch(e) {}
 
-      // Kayıtları Dinle
-      window.onSnapshot(window.collection(window.db, "records"), (snapshot) => {
-        records = {};
-        snapshot.forEach((doc) => {
-          records[doc.id] = doc.data().val;
+      // Evrak Verilerini Dinle
+      try {
+        window.onSnapshot(window.collection(window.db, "teacher_docs"), (snapshot) => {
+          docsData = {};
+          snapshot.forEach(d => { docsData[d.id] = d.data(); });
+          render();
         });
-        render();
-      });
+      } catch(e) {}
     }
 
-    function selectEvent(id) {
-      selectedEventId = id;
+    async function saveSocialEntry(studentName, field, value) {
+      if (!window.db) return;
+      const docKey = `${selectedClass}_${studentName}`;
+      await window.setDoc(window.doc(window.db, "social_activities", docKey), {
+        class: selectedClass,
+        studentName: studentName,
+        [field]: value,
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
+    }
+    window.saveSocialEntry = saveSocialEntry;
+
+    function switchTab(tab) {
+      activeTab = tab;
       render();
     }
-    window.selectEvent = selectEvent;
+    window.switchTab = switchTab;
+
+    function selectClass(cls) {
+      selectedClass = cls;
+      render();
+    }
+    window.selectClass = selectClass;
+
+    function selectTeacher(name) {
+      selectedTeacher = name;
+      render();
+    }
+    window.selectTeacher = selectTeacher;
 
     function render() {
-      const eventSelector = document.getElementById('eventSelector');
-      const classGrid = document.getElementById('classGrid');
+      document.getElementById('btn-etkinlik').className = `tab-btn ${activeTab === 'etkinlik' ? 'active' : ''}`;
+      document.getElementById('btn-evrak').className = `tab-btn ${activeTab === 'evrak' ? 'active' : ''}`;
 
-      if (events.length === 0) {
-        eventSelector.innerHTML = '<span style="font-size: 12px; color: #a0aec0;">Henüz öğretmenler tarafından eklenmiş bir etkinlik yok.</span>';
-        classGrid.innerHTML = '';
-        return;
-      }
+      const contentArea = document.getElementById('content-area');
 
-      // Etkinlik Butonları Doldur
-      eventSelector.innerHTML = events.map(ev => `
-        <button onclick="selectEvent('${ev.id}')" class="event-chip ${selectedEventId === ev.id ? 'active' : ''}">
-          ${ev.name} (${ev.date})
-        </button>
-      `).join('');
+      if (activeTab === 'etkinlik') {
+        const classStudents = students[selectedClass] || [];
 
-      const selectedEventObj = events.find(e => e.id === selectedEventId);
-
-      if (!selectedEventObj) {
-        classGrid.innerHTML = '';
-        return;
-      }
-
-      // Sınıf Kartlarını Doldur
-      classGrid.innerHTML = classes.map(c => {
-        const classStudents = students[c] || [];
-        let completedCount = 0;
-
-        classStudents.forEach(st => {
-          if (records[`${c}_${selectedEventObj.name}_${st}`]) completedCount++;
-        });
-
-        const percent = classStudents.length > 0 ? Math.round((completedCount / classStudents.length) * 100) : 0;
-        const isAllDone = completedCount === classStudents.length && classStudents.length > 0;
-
-        return `
-          <div class="class-card ${isAllDone ? 'completed' : ''}">
-            <div class="class-card-header">
-              <span class="class-name">${c} Sınıfı</span>
-              <span class="class-percent">${completedCount}/${classStudents.length} (%${percent})</span>
+        contentArea.innerHTML = `
+          <div style="margin-bottom: 15px;">
+            <p style="font-size: 11px; color: #718096; margin-bottom: 6px; font-weight: bold;">SINIF SEÇİNİZ:</p>
+            <div class="chip-container">
+              ${classes.map(c => `
+                <button onclick="selectClass('${c}')" class="chip ${selectedClass === c ? 'active' : ''}">${c} Sınıfı</button>
+              `).join('')}
             </div>
-            
-            <div class="progress-bar-bg">
-              <div class="progress-bar-fill" style="width: ${percent}%;"></div>
-            </div>
-
-            <details>
-              <summary>Öğrenci Detayları</summary>
-              <ul class="student-list">
-                ${classStudents.map(st => {
-                  const val = records[`${c}_${selectedEventObj.name}_${st}`];
-                  let statusHtml = '<span class="status-none">Girilmedi</span>';
-                  if (val === 'katilim') statusHtml = '<span class="status-katilim">Katılım</span>';
-                  if (val === 'performans') statusHtml = '<span class="status-performans">Performans</span>';
-
-                  return `
-                    <li class="student-item">
-                      <span>${st}</span>${statusHtml}
-                    </li>
-                  `;
-                }).join('')}
-              </ul>
-            </details>
           </div>
+
+          <h3 style="font-size: 14px; color: #2b6cb0; margin-bottom: 10px;">📋 ${selectedClass} Sınıfı Sosyal Etkinlik Girişi</h3>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 30px;">#</th>
+                <th>Öğrenci Adı Soyadı</th>
+                <th style="width: 180px;">Sosyal Kulüp</th>
+                <th>Etkinlik / Görev</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${classStudents.map((st, index) => {
+                const key = `${selectedClass}_${st}`;
+                const stData = socialData[key] || {};
+                return `
+                  <tr>
+                    <td>${index + 1}</td>
+                    <td style="font-weight: 600;">${st}</td>
+                    <td>
+                      <select onchange="saveSocialEntry('${st}', 'club', this.value)">
+                        <option value="">-- Kulüp Seçin --</option>
+                        <option value="Spor Kulübü" ${stData.club === 'Spor Kulübü' ? 'selected' : ''}>Spor Kulübü</option>
+                        <option value="Değerler Kulübü" ${stData.club === 'Değerler Kulübü' ? 'selected' : ''}>Değerler Kulübü</option>
+                        <option value="Kütüphanecilik Kulübü" ${stData.club === 'Kütüphanecilik Kulübü' ? 'selected' : ''}>Kütüphanecilik Kulübü</option>
+                        <option value="Görsel Sanatlar Kulübü" ${stData.club === 'Görsel Sanatlar Kulübü' ? 'selected' : ''}>Görsel Sanatlar Kulübü</option>
+                        <option value="Kızılay Kulübü" ${stData.club === 'Kızılay Kulübü' ? 'selected' : ''}>Kızılay Kulübü</option>
+                        <option value="Yeşilay Kulübü" ${stData.club === 'Yeşilay Kulübü' ? 'selected' : ''}>Yeşilay Kulübü</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input type="text" value="${stData.activity \vert{}\vert{} ''}" onblur="saveSocialEntry('${st}', 'activity', this.value)" placeholder="Etkinlik adını girin...">
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
         `;
-      }).join('');
+      } else {
+        contentArea.innerHTML = `
+          <div style="margin-bottom: 15px;">
+            <p style="font-size: 11px; color: #718096; margin-bottom: 6px; font-weight: bold;">ÖĞRETMEN SEÇİNİZ:</p>
+            <div class="chip-container">
+              ${teachers.map(t => `
+                <button onclick="selectTeacher('${t}')" class="chip ${selectedTeacher === t ? 'active' : ''}">${t}</button>
+              `).join('')}
+            </div>
+          </div>
+
+          ${selectedTeacher ? `
+            <h3 style="font-size: 14px; color: #2b6cb0; margin-bottom: 10px;">📁 Evrak Listesi (${selectedTeacher})</h3>
+            <p style="font-size: 12px; color: #a0aec0;">Evrak yükleme ve teslim takibi modülü aktif.</p>
+          ` : `
+            <p style="font-size: 12px; color: #a0aec0; text-align: center; padding: 20px;">Lütfen yukarıdan isminizi seçiniz.</p>
+          `}
+        `;
+      }
     }
 
+    render();
     initFirebase();
   </script>
 
