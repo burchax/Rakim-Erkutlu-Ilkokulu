@@ -6,11 +6,15 @@
   <title>Öğretmen Portalı - Rakım Erkutlu İlkokulu</title>
   <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Firebase Bağlantısı -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+  <!-- Firebase SDKs (Compat Modu - Tek Parça ve Güvenli Yükleme) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen p-4 md:p-6 antialiased">
+  <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden" id="app"></div>
 
+  <script>
+    // Firebase Başlatma
     const firebaseConfig = {
       apiKey: "AIzaSyBICjJMMMT3Z1FgsbR2kaUIhNrqvRcg7wM",
       authDomain: "rakim-erkutlu-io-ogretmen.firebaseapp.com",
@@ -20,29 +24,18 @@
       appId: "1:35323173695:web:3031e2107a3e3bf0c8918a"
     };
 
+    let db = null;
     try {
-      const app = initializeApp(firebaseConfig);
-      const db = getFirestore(app);
-
-      window.db = db;
-      window.collection = collection;
-      window.onSnapshot = onSnapshot;
-      window.doc = doc;
-      window.setDoc = setDoc;
-
-      if (window.initAppListeners) {
-        window.initAppListeners();
+      if (!firebase.apps.length) {
+        firebase.initializeApp(firebaseConfig);
       }
+      db = firebase.firestore();
     } catch (e) {
-      console.error("Firebase başlatma hatası:", e);
+      console.error("Firebase Başlatılamadı:", e);
     }
-  </script>
-</head>
-<body class="bg-slate-100 text-slate-800 min-h-screen p-4 md:p-6 antialiased">
-  <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden" id="app"></div>
 
-  <script>
-    let activeTab = 'etkinlik'; 
+    // Uygulama Durumu (State)
+    let activeTab = 'etkinlik'; // Varsayılan Sosyal Etkinlik
     let selectedTeacher = null;
     let selectedTerm = '1. Dönem';
     let selectedClass = '2-A';
@@ -54,66 +47,54 @@
     let adminApprovals = {};
     let socialData = {};
 
-    window.initAppListeners = function() {
-      if (!window.db) return;
+    // Firestore Dinleyicileri
+    function initListeners() {
+      if (!db) return;
 
-      try {
-        window.onSnapshot(window.collection(window.db, "teacher_docs"), (snapshot) => {
-          docsData = {};
-          snapshot.forEach(docSnap => { docsData[docSnap.id] = docSnap.data(); });
-          render();
-        }, err => console.warn("teacher_docs okuma uyarısı:", err));
+      db.collection("teacher_docs").onSnapshot(snapshot => {
+        docsData = {};
+        snapshot.forEach(doc => { docsData[doc.id] = doc.data(); });
+        render();
+      }, err => console.warn("teacher_docs hatası:", err));
 
-        window.onSnapshot(window.collection(window.db, "admin_approvals"), (snapshot) => {
-          adminApprovals = {};
-          snapshot.forEach(docSnap => { adminApprovals[docSnap.id] = docSnap.data().approved; });
-          render();
-        }, err => console.warn("admin_approvals okuma uyarısı:", err));
+      db.collection("admin_approvals").onSnapshot(snapshot => {
+        adminApprovals = {};
+        snapshot.forEach(doc => { adminApprovals[doc.id] = doc.data().approved; });
+        render();
+      }, err => console.warn("admin_approvals hatası:", err));
 
-        window.onSnapshot(window.collection(window.db, "social_activities"), (snapshot) => {
-          socialData = {};
-          snapshot.forEach(docSnap => { socialData[docSnap.id] = docSnap.data(); });
-          render();
-        }, err => console.warn("social_activities okuma uyarısı:", err));
-      } catch (err) {
-        console.error("Firebase dinleyici hatası:", err);
-      }
-    };
+      db.collection("social_activities").onSnapshot(snapshot => {
+        socialData = {};
+        snapshot.forEach(doc => { socialData[doc.id] = doc.data(); });
+        render();
+      }, err => console.warn("social_activities hatası:", err));
+    }
 
     async function toggleTeacherCheck(docId) {
-      if (!selectedTeacher || !window.db) return;
+      if (!selectedTeacher || !db) return;
       const current = docsData[docId]?.teacherSubmitted || false;
-      await window.setDoc(window.doc(window.db, "teacher_docs", docId), {
+      await db.collection("teacher_docs").doc(docId).set({
         teacherSubmitted: !current,
         teacherName: selectedTeacher,
         updatedAt: new Date().toISOString()
       }, { merge: true });
     }
-    window.toggleTeacherCheck = toggleTeacherCheck;
 
     async function saveSocialEntry(studentId, field, value) {
-      if (!window.db) return;
+      if (!db) return;
       const docKey = `${selectedClass}_${studentId}`;
-      await window.setDoc(window.doc(window.db, "social_activities", docKey), {
+      await db.collection("social_activities").doc(docKey).set({
         class: selectedClass,
         studentId: studentId,
         [field]: value,
         updatedAt: new Date().toISOString()
       }, { merge: true });
     }
-    window.saveSocialEntry = saveSocialEntry;
 
     function selectTeacher(name) { selectedTeacher = name; render(); }
-    window.selectTeacher = selectTeacher;
-
     function selectTerm(term) { selectedTerm = term; render(); }
-    window.selectTerm = selectTerm;
-
     function selectClass(cls) { selectedClass = cls; render(); }
-    window.selectClass = selectClass;
-
     function switchTab(tab) { activeTab = tab; render(); }
-    window.switchTab = switchTab;
 
     const defaultDocs = [
       { id: '1', title: '1. Zümre Toplantı Tutanağı (Sene Başı)', term: '1. Dönem', deadline: 'Eylül Sonu', target: 'ALL' },
@@ -343,11 +324,10 @@
       `;
     }
 
-    // Arayüzü anında yükle
+    // İlk açılışta hemen çiz
     render();
-    if (window.initAppListeners) {
-      window.initAppListeners();
-    }
+    // Dinleyicileri çalıştır
+    initListeners();
   </script>
 </body>
 </html>
