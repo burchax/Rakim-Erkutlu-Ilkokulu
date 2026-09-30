@@ -40,7 +40,17 @@
   <script>
     const data = {
       classes: ['1-A', '1-B', '2-A', '2-B', '3-A', '3-B', '4-A', '4-B'],
-      teachers: ['YÜKSEL TANRIVERDİ', 'ESRA ALACA', 'İLKAY YEGANE', 'HATİCE KIRKIZ', 'ERGÜL TANRISEVEN', 'GÜLSEHER KONAKLI', 'GÜL UNGAN', 'AYLİN UYGUN'],
+      // Öğretmen İsimleri A'dan Z'ye Sıralandı
+      teachers: [
+        'AYLİN UYGUN',
+        'ERGÜL TANRISEVEN',
+        'ESRA ALACA',
+        'GÜL UNGAN',
+        'GÜLSEHER KONAKLI',
+        'HATİCE KIRKIZ',
+        'İLKAY YEGANE',
+        'YÜKSEL TANRIVERDİ'
+      ],
       events: [],
       students: {
         '1-A': ['ALYA DEVRİM AYDIN', 'AYŞE NİSA ECEVİT', 'AZRA ÇATAN', 'EFE MEHMET AKTAN', 'EMRAH SERPEN', 'MEHMET SELİM ÖRDEK', 'MİRAN EMİN DEMİR', 'YAREN BÜLBÜL', 'MİRAÇ ASİL YÖRE', 'ROJHAT ECEVİT', 'MUHAMMED NAIF', 'YUSUF DABDABEN', 'HALE HIRFAN', 'SEM HIRFAN', 'YAKUP EL UGLA', 'VAHID TAHHAN', 'NIDAL NAIF', 'AYŞE HIRFAN', 'MIRAL ELHACTALİB'],
@@ -163,7 +173,7 @@
     function toggleMenu() { isMenuOpen = !isMenuOpen; render(); }
     function switchTab(tab) { activeTab = tab; isMenuOpen = false; saveState(); render(); }
     function selectTeacher(name) { selectedTeacher = name; saveState(); render(); }
-    function selectTerm(term) { selectedTerm = term; saveState(); render(); }
+    function selectTerm(term) { selectedTerm = term; render(); }
 
     async function toggleTeacherCheck(docId) {
       if (!selectedTeacher || !window.db) return;
@@ -216,7 +226,7 @@
               <div class="grid grid-cols-2 gap-3">
                 ${data.teachers.map(t => `
                   <button onclick="selectTeacher('${t}')" class="p-3 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 rounded-xl font-bold text-slate-700 text-xs transition-all text-center">
-                    👨‍🏫 ${t}
+                    👩‍🏫 ${t}
                   </button>
                 `).join('')}
               </div>
@@ -237,7 +247,7 @@
             <div class="flex justify-between items-center mb-4 bg-slate-50 p-3 rounded-xl border border-slate-200">
               <div>
                 <span class="text-[10px] text-slate-400 font-bold uppercase">Aktif Öğretmen:</span>
-                <h2 class="text-sm font-bold text-indigo-900">${selectedTeacher}</h2>
+                <h2 class="text-sm font-bold text-indigo-900">👩‍🏫 ${selectedTeacher}</h2>
               </div>
               <button onclick="selectTeacher(null)" class="text-xs text-indigo-600 hover:underline font-bold">← Değiştir</button>
             </div>
@@ -321,7 +331,7 @@
                     </div>
                     <div class="flex items-center space-x-1 border-l border-slate-100 pl-2">
                       <button onclick="editEventDirectly('${ev.id}')" title="Düzenle" class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors text-xs font-semibold">✏️</button>
-                      <button onclick="deleteEventDirectly('${ev.id}')" title="Sil" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-xs font-semibold">🗑️️</button>
+                      <button onclick="deleteEventDirectly('${ev.id}')" title="Sil" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-xs font-semibold">🗑</button>
                       <button onclick="selectEvent('${ev.id}')" class="ml-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs rounded-lg transition-colors">Giriş Yap →</button>
                     </div>
                   </div>
