@@ -3,12 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Öğretmen Portalı - Rakım Erkutlu İlkokulu</title>
+  <title>Öğretmen Paneli</title>
+  <meta property="og:title" content="Öğretmen Paneli" />
+  <script src="https://cdn.tailwindcss.com"></script>
 
-  <!-- Firebase Bulut Veritabanı Bağlantısı -->
+  <!-- Firebase CDN Bağlantıları -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBICjJMMMT3Z1FgsbR2kaUIhNrqvRcg7wM",
@@ -19,296 +21,294 @@
       appId: "1:35323173695:web:3031e2107a3e3bf0c8918a"
     };
 
-    try {
-      const app = initializeApp(firebaseConfig);
-      const db = getFirestore(app);
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-      window.db = db;
-      window.collection = collection;
-      window.onSnapshot = onSnapshot;
-      window.doc = doc;
-      window.setDoc = setDoc;
-    } catch (e) {
-      console.error("Firebase bağlantı hatası:", e);
-    }
+    window.db = db;
+    window.collection = collection;
+    window.onSnapshot = onSnapshot;
+    window.addDoc = addDoc;
+    window.doc = doc;
+    window.updateDoc = updateDoc;
+    window.deleteDoc = deleteDoc;
+    window.setDoc = setDoc;
   </script>
-
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f4f7f6;
-      color: #333;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      min-height: 100vh;
-      padding: 15px;
-    }
-    .container {
-      width: 100%;
-      max-width: 800px;
-      background: #ffffff;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-      margin-top: 10px;
-    }
-    .header-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border-bottom: 2px solid #e2e8f0;
-      padding-bottom: 15px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-    h1 { color: #1a365d; font-size: 20px; }
-    .nav-tabs { display: flex; gap: 8px; }
-    .tab-btn {
-      padding: 8px 14px;
-      border-radius: 8px;
-      border: 1px solid #cbd5e0;
-      background: #edf2f7;
-      color: #4a5568;
-      font-weight: 700;
-      font-size: 12px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    .tab-btn.active {
-      background: #3182ce;
-      color: #fff;
-      border-color: #3182ce;
-    }
-    .chip-container {
-      display: flex;
-      gap: 6px;
-      overflow-x: auto;
-      padding-bottom: 8px;
-      margin-bottom: 15px;
-    }
-    .chip {
-      background: #f7fafc;
-      border: 1px solid #e2e8f0;
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    .chip.active {
-      background: #2b6cb0;
-      color: #fff;
-      border-color: #2b6cb0;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-      font-size: 12px;
-    }
-    th, td {
-      border: 1px solid #e2e8f0;
-      padding: 8px 10px;
-      text-align: left;
-    }
-    th { background: #edf2f7; color: #2d3748; }
-    select, input[type="text"] {
-      width: 100%;
-      padding: 5px;
-      border-radius: 4px;
-      border: 1px solid #cbd5e0;
-      font-size: 11px;
-    }
-    footer { margin-top: auto; padding-top: 20px; font-size: 11px; color: #a0aec0; text-align: center; }
-  </style>
 </head>
-<body>
-
-  <div class="container">
-    <div class="header-bar">
-      <div>
-        <h1>🏫 Öğretmen Portalı</h1>
-        <span style="font-size: 11px; color: #718096;">Rakım Erkutlu İlkokulu</span>
-      </div>
-      <!-- Ana Sekmeler: 1. Sosyal Etkinlik, 2. Evrak Takip -->
-      <div class="nav-tabs">
-        <button onclick="switchTab('etkinlik')" class="tab-btn" id="btn-etkinlik">📊 Sosyal Etkinlik Takip</button>
-        <button onclick="switchTab('evrak')" class="tab-btn" id="btn-evrak">📁 Evrak Takip</button>
-      </div>
-    </div>
-
-    <!-- Modül Alanı -->
-    <div id="content-area"></div>
-  </div>
-
-  <footer>
-    © Rakım Erkutlu İlkokulu - Öğretmen Yönetim Portalı
-  </footer>
+<body class="bg-slate-50 min-h-screen text-slate-800 antialiased p-4 md:p-6">
+  <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl border border-slate-100 overflow-hidden relative" id="app"></div>
 
   <script>
-    let activeTab = 'etkinlik'; // Varsayılan Sosyal Etkinlik
-    let selectedClass = '2-A';
-    let selectedTeacher = null;
-    let selectedTerm = '1. Dönem';
-
-    const classes = ['1-A', '1-B', '2-A', '2-B', '3-A', '3-B', '4-A', '4-B'];
-    const teachers = ['YÜKSEL TANRIVERDİ', 'ESRA ALACA', 'İLKAY YEGANE', 'HATİCE KIRKIZ', 'ERGÜL TANRISEVEN', 'GÜLSEHER KONAKLI', 'GÜL UNGAN', 'AYLİN UYGUN'];
-    
-    const students = {
-      '1-A': ['ALYA DEVRİM AYDIN', 'AYŞE NİSA ECEVİT', 'AZRA ÇATAN', 'EFE MEHMET AKTAN', 'EMRAH SERPEN', 'MEHMET SELİM ÖRDEK', 'MİRAN EMİN DEMİR', 'YAREN BÜLBÜL', 'MİRAÇ ASİL YÖRE', 'ROJHAT ECEVİT', 'MUHAMMED NAIF', 'YUSUF DABDABEN', 'HALE HIRFAN', 'SEM HIRFAN', 'YAKUP EL UGLA', 'VAHID TAHHAN', 'NIDAL NAIF', 'AYŞE HIRFAN', 'MIRAL ELHACTALİB'],
-      '1-B': ['AHMET ÖZMEN', 'NEFES ÜSTEBAY', 'ALİ YÜCEL', 'ALMİNA MASAL BİLMEDİ', 'ARYA CAYMAZ', 'HAVİN OCAĞ', 'BUĞLEM ADA MATSAR', 'DENİZ ÖZSOY', 'ELANUR UZTEMUR', 'HÜMEYRA DAĞTEKİN', 'MUAZ ALİ KULAŞ', 'YAĞIZ PİRENVİSE', 'FERHAT MURAD', 'NURİ NAİF', 'MUHAMMED MUHAMMED', 'HANİN HERFAN', 'YUSUF ELUKLA', 'İBRAHİM HAMZA', 'MUSTAFA HAMZA', 'NURELHUDE RECEP'],
-      '2-A': ['ABDULLAH BÜLKÜ', 'BERAT KULAŞ', 'DEVRAN ÖZSOY', 'ESİLA ÖRDEK', 'ESLEM YURT', 'MİNA EVRA DÖĞER', 'MUHAMMED EYMEN ÖZSOY', 'YUSUF İVEDİ', 'NİSANUR AKDAĞ', 'BERIVAN ÖRDEK', 'EZGİ ULUTAŞ', 'HÜLYA ÜREYİL', 'MUHAMMED HÜSEYİN DEĞİRMENCİ', 'AHMED ABDULRAHMAN', 'RUSLIN OSMAN', 'MUHAMMED SIDO', 'HATTAB BERGUT', 'RUHEF HAKKI', 'AYŞE ALHALO', 'İLEF AHMED'],
-      '2-B': ['ALPER AYDOĞAN', 'REYYAN ŞANİ', 'HALİL YILDIRIM', 'MEHMET TALHA KURNAZ', 'MUHAMMED SELİM BÜLKÜ', 'ÖYKÜ YILMAZ', 'ELİF KOSKA', 'FATMANUR ÇELİK', 'GÜLŞAH RONAHİ KEVSER ECEVİT', 'KADER KORKMAZ', 'ARAS BULUT YARIMAY', 'ASMİN MATSAR', 'HIRANUR CEMİLE ÇİÇEKLİ', 'TUĞBA ULUTAŞ', 'BEYZANUR BÜLBÜL', 'MUHAMMAD ABDURRAHMAN', 'MAHMUD HAMİDİ', 'AHMED AHMED', 'AHMED KADEK'],
-      '3-A': ['ARYA OKULMUŞ', 'AYSİMA ÖRDEK', 'AYŞE GÜL ORUÇ', 'BURAK ECEVÍT', 'DEFNE SU ÇETİN', 'ELISA SU BAYRAM', 'MUHAMMED EMİR YAĞAR', 'YUSUF CAN ÇİÇEKLİ', 'HÜSEYİN HABEŞ', 'ROYA ALO', 'NUCIN HIDDO', 'BAHAR KADEK', 'HOZAN HACMUSA', 'MEYSA ABDULRAHMAN', 'MUHAMMED KUR'],
-      '3-B': ['ABDULRAHΜΑΝ HANNUŞ', 'HIRA NUR GÖKSU', 'HÜSEYİN DAĞTEKİN', 'MİRAÇ ÖRDEK', 'CANE HANNUŞ', 'NEHİR UZAR', 'POYRAZ ÖZEL', 'ÜZEYİR BÜLKÜ', 'MİRAN KORKMAZ', 'ASEL ÖZMEN', 'MENESA ORAL', 'KAMAR SIDO', 'MIRAL SIDO', 'RULA KADEK', 'YUNUS OSMAN', 'MAHMUD BARGUD'],
-      '4-A': ['BERFİN ÖRDEK', 'EMİR HAKİM ÇELİK', 'HIRANUR AKDAĞ', 'HÜSEYİN EKREM OKULMUŞ', 'İBRAHİM BUĞRA SEÇEN', 'YİĞİT HAKTAN KULACA', 'MUHAMMED EYÜP BİLGİLİ', 'REŞAT CEMAL CAN ECEVİT', 'ESILA AKÇAY', 'HİRANUR ARTIK', 'ZEYNEP TAMİRCAN', 'NAZENİN KARAKAYA', 'MUHAMMED MAMO', 'RONI ALO', 'MUHAMMED HAMMET', 'AHMED MUHAMMED', 'YASEMIN RESO', 'MUHAMMED HAMZA', 'NECAT HAMIDI', 'ILYANA ABDURRAHMAN'],
-      '4-B': ['ALİ EREN SEVEN', 'BERAT ALPASLAN DINDAR', 'BETÜL MATSAR', 'BİLGESU BARAN', 'EREN YARIMAY', 'MEHMET ALİ ERKUŞ', 'ÖMER ALİ KESER', 'SALİH UYGÜL', 'SEYFETTİN MİRAÇ HASATEŞ', 'HALİL İBRAHİM KAYA', 'DERİN OKULMUŞ', 'BERZAN BİLMEDİ', 'YUSUF ÇİÇEKLİ', 'DURU RÜYA ASLAN', 'NEHİR ECEVİT', 'BÜŞRA AYAZ', 'MELISA ECEVİT', 'NAIF HERFAN', 'SEMİR DABDABEN', 'VOLKAN HASAN']
+    const data = {
+      classes: ['1-A', '1-B', '2-A', '2-B', '3-A', '3-B', '4-A', '4-B'],
+      events: [],
+      students: {
+        '1-A': ['ALYA DEVRİM AYDIN', 'AYŞE NİSA ECEVİT', 'AZRA ÇATAN', 'EFE MEHMET AKTAN', 'EMRAH SERPEN', 'MEHMET SELİM ÖRDEK', 'MİRAN EMİN DEMİR', 'YAREN BÜLBÜL', 'MİRAÇ ASİL YÖRE', 'ROJHAT ECEVİT', 'MUHAMMED NAIF', 'YUSUF DABDABEN', 'HALE HIRFAN', 'SEM HIRFAN', 'YAKUP EL UGLA', 'VAHID TAHHAN', 'NIDAL NAIF', 'AYŞE HIRFAN', 'MIRAL ELHACTALİB'],
+        '1-B': ['AHMET ÖZMEN', 'NEFES ÜSTEBAY', 'ALİ YÜCEL', 'ALMİNA MASAL BİLMEDİ', 'ARYA CAYMAZ', 'HAVİN OCAĞ', 'BUĞLEM ADA MATSAR', 'DENİZ ÖZSOY', 'ELANUR UZTEMUR', 'HÜMEYRA DAĞTEKİN', 'MUAZ ALİ KULAŞ', 'YAĞIZ PİRENVİSE', 'FERHAT MURAD', 'NURİ NAİF', 'MUHAMMED MUHAMMED', 'HANİN HERFAN', 'YUSUF ELUKLA', 'İBRAHİM HAMZA', 'MUSTAFA HAMZA', 'NURELHUDE RECEP'],
+        '2-A': ['ABDULLAH BÜLKÜ', 'BERAT KULAŞ', 'DEVRAN ÖZSOY', 'ESİLA ÖRDEK', 'ESLEM YURT', 'MİNA EVRA DÖĞER', 'MUHAMMED EYMEN ÖZSOY', 'YUSUF İVEDİ', 'NİSANUR AKDAĞ', 'BERIVAN ÖRDEK', 'EZGİ ULUTAŞ', 'HÜLYA ÜREYİL', 'MUHAMMED HÜSEYİN DEĞİRMENCİ', 'AHMED ABDULRAHMAN', 'RUSLIN OSMAN', 'MUHAMMED SIDO', 'HATTAB BERGUT', 'RUHEF HAKKI', 'AYŞE ALHALO', 'İLEF AHMED'],
+        '2-B': ['ALPER AYDOĞAN', 'REYYAN ŞANİ', 'HALİL YILDIRIM', 'MEHMET TALHA KURNAZ', 'MUHAMMED SELİM BÜLKÜ', 'ÖYKÜ YILMAZ', 'ELİF KOSKA', 'FATMANUR ÇELİK', 'GÜLŞAH RONAHİ KEVSER ECEVİT', 'KADER KORKMAZ', 'ARAS BULUT YARIMAY', 'ASMİN MATSAR', 'HIRANUR CEMİLE ÇİÇEKLİ', 'TUĞBA ULUTAŞ', 'BEYZANUR BÜLBÜL', 'MUHAMMAD ABDURRAHMAN', 'MAHMUD HAMİDİ', 'AHMED AHMED', 'AHMED KADEK'],
+        '3-A': ['ARYA OKULMUŞ', 'AYSİMA ÖRDEK', 'AYŞE GÜL ORUÇ', 'BURAK ECEVÍT', 'DEFNE SU ÇETİN', 'ELISA SU BAYRAM', 'MUHAMMED EMİR YAĞAR', 'YUSUF CAN ÇİÇEKLİ', 'HÜSEYİN HABEŞ', 'ROYA ALO', 'NUCIN HIDDO', 'BAHAR KADEK', 'HOZAN HACMUSA', 'MEYSA ABDULRAHMAN', 'MUHAMMED KUR'],
+        '3-B': ['ABDULRAHΜΑΝ HANNUŞ', 'HIRA NUR GÖKSU', 'HÜSEYİN DAĞTEKİN', 'MİRAÇ ÖRDEK', 'CANE HANNUŞ', 'NEHİR UZAR', 'POYRAZ ÖZEL', 'ÜZEYİR BÜLKÜ', 'MİRAN KORKMAZ', 'ASEL ÖZMEN', 'MENESA ORAL', 'KAMAR SIDO', 'MIRAL SIDO', 'RULA KADEK', 'YUNUS OSMAN', 'MAHMUD BARGUD'],
+        '4-A': ['BERFİN ÖRDEK', 'EMİR HAKİM ÇELİK', 'HIRANUR AKDAĞ', 'HÜSEYİN EKREM OKULMUŞ', 'İBRAHİM BUĞRA SEÇEN', 'YİĞİT HAKTAN KULACA', 'MUHAMMED EYÜP BİLGİLİ', 'REŞAT CEMAL CAN ECEVİT', 'ESILA AKÇAY', 'HİRANUR ARTIK', 'ZEYNEP TAMİRCAN', 'NAZENİN KARAKAYA', 'MUHAMMED MAMO', 'RONI ALO', 'MUHAMMED HAMMET', 'AHMED MUHAMMED', 'YASEMIN RESO', 'MUHAMMED HAMZA', 'NECAT HAMIDI', 'ILYANA ABDURRAHMAN'],
+        '4-B': ['ALİ EREN SEVEN', 'BERAT ALPASLAN DINDAR', 'BETÜL MATSAR', 'BİLGESU BARAN', 'EREN YARIMAY', 'MEHMET ALİ ERKUŞ', 'ÖMER ALİ KESER', 'SALİH UYGÜL', 'SEYFETTİN MİRAÇ HASATEŞ', 'HALİL İBRAHİM KAYA', 'DERİN OKULMUŞ', 'BERZAN BİLMEDİ', 'YUSUF ÇİÇEKLİ', 'DURU RÜYA ASLAN', 'NEHİR ECEVİT', 'BÜŞRA AYAZ', 'MELISA ECEVİT', 'NAIF HERFAN', 'SEMİR DABDABEN', 'VOLKAN HASAN']
+      }
     };
 
-    let socialData = {};
-    let docsData = {};
+    // Ekran Durumlarını Hafızada Tutma (Session State)
+    let activeTab = sessionStorage.getItem('activeTab') || 'social';
+    let currentStep = sessionStorage.getItem('currentStep') || 'classes';
+    let selectedClass = sessionStorage.getItem('selectedClass') || null;
+    let selectedEventId = sessionStorage.getItem('selectedEventId') || null;
+    let selectedEventObj = null;
+    let records = {};
+    let isMenuOpen = false;
 
-    function initFirebase() {
+    function saveState() {
+      sessionStorage.setItem('activeTab', activeTab);
+      sessionStorage.setItem('currentStep', currentStep);
+      if (selectedClass) sessionStorage.setItem('selectedClass', selectedClass); else sessionStorage.removeItem('selectedClass');
+      if (selectedEventId) sessionStorage.setItem('selectedEventId', selectedEventId); else sessionStorage.removeItem('selectedEventId');
+    }
+
+    function initFirebaseListener() {
       if (!window.db) {
-        setTimeout(initFirebase, 200);
+        setTimeout(initFirebaseListener, 200);
+        return;
+      }
+      
+      // Buluttan Canlı Etkinlik Dinleyicisi
+      window.onSnapshot(window.collection(window.db, "events"), (snapshot) => {
+        data.events = [];
+        snapshot.forEach((doc) => {
+          data.events.push({ id: doc.id, ...doc.data() });
+        });
+
+        if (selectedEventId) {
+          selectedEventObj = data.events.find(e => e.id === selectedEventId) || null;
+        }
+
+        render();
+      });
+
+      // Buluttan Canlı Öğrenci Kayıt Dinleyicisi
+      window.onSnapshot(window.collection(window.db, "records"), (snapshot) => {
+        records = {};
+        snapshot.forEach((doc) => {
+          records[doc.id] = doc.data().val;
+        });
+        render();
+      });
+    }
+
+    function toggleMenu() { isMenuOpen = !isMenuOpen; render(); }
+    function switchTab(tab) { activeTab = tab; currentStep = 'classes'; selectedClass = null; selectedEventId = null; selectedEventObj = null; isMenuOpen = false; saveState(); render(); }
+
+    function renderHeader() {
+      return `
+        <div class="bg-gradient-to-r from-indigo-700 via-indigo-600 to-blue-600 p-5 text-white">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <span class="text-xs font-semibold uppercase tracking-wider text-indigo-200">Rakım Erkutlu İlkokulu</span>
+              <h1 class="text-xl font-bold tracking-tight">Öğretmen Paneli</h1>
+            </div>
+            <div class="relative">
+              <button onclick="toggleMenu()" class="p-2 text-indigo-100 hover:text-white hover:bg-white/10 rounded-lg transition-all text-xl font-bold leading-none">&#8942;</button>
+              ${isMenuOpen ? `
+                <div class="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-slate-100 z-50 py-1.5 text-slate-700">
+                  <button onclick="addNewEvent()" class="flex items-center w-full text-left px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-600 font-medium transition-colors"><span class="mr-2">➕</span> Yeni Etkinlik Ekle</button>
+                  <button onclick="showMissingClasses()" class="flex items-center w-full text-left px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-600 font-medium border-t border-slate-100 transition-colors"><span class="mr-2">🏫</span> Tamamlanmayan Sınıflar</button>
+                  <button onclick="showMissingStudents()" class="flex items-center w-full text-left px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-600 font-medium border-t border-slate-100 transition-colors"><span class="mr-2">📋</span> Verileri Eksik Öğrenciler</button>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+          <div class="flex space-x-2 bg-indigo-900/40 p-1 rounded-xl backdrop-blur-sm border border-white/10">
+            <button onclick="switchTab('social')" class="flex-1 py-2 px-3 text-xs md:text-sm font-semibold rounded-lg transition-all ${activeTab === 'social' ? 'bg-white text-indigo-700 shadow-sm' : 'text-indigo-100 hover:text-white hover:bg-white/5'}">🏆 Sosyal Etkinlik Takip</button>
+            <button onclick="switchTab('documents')" class="flex-1 py-2 px-3 text-xs md:text-sm font-semibold rounded-lg transition-all ${activeTab === 'documents' ? 'bg-white text-indigo-700 shadow-sm' : 'text-indigo-100 hover:text-white hover:bg-white/5'}">📁 Evrak Takip</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function render() {
+      const app = document.getElementById('app');
+      if (activeTab === 'documents') {
+        app.innerHTML = `
+          ${renderHeader()}
+          <div class="p-6 text-center py-12">
+            <div class="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl font-bold">📁</div>
+            <h3 class="text-lg font-bold text-slate-800 mb-2">Evrak Takip Modülü</h3>
+            <p class="text-sm text-slate-500 max-w-sm mx-auto mb-6">Bu modül yakında hizmete girecektir.</p>
+            <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-50 text-amber-700 border border-amber-200">⏳ Hazırlık Aşamasında</span>
+          </div>
+        `;
         return;
       }
 
-      // Sosyal Etkinlik Verilerini Dinle
-      try {
-        window.onSnapshot(window.collection(window.db, "social_activities"), (snapshot) => {
-          socialData = {};
-          snapshot.forEach(d => { socialData[d.id] = d.data(); });
-          render();
-        });
-      } catch(e) {}
-
-      // Evrak Verilerini Dinle
-      try {
-        window.onSnapshot(window.collection(window.db, "teacher_docs"), (snapshot) => {
-          docsData = {};
-          snapshot.forEach(d => { docsData[d.id] = d.data(); });
-          render();
-        });
-      } catch(e) {}
-    }
-
-    async function saveSocialEntry(studentName, field, value) {
-      if (!window.db) return;
-      const docKey = `${selectedClass}_${studentName}`;
-      await window.setDoc(window.doc(window.db, "social_activities", docKey), {
-        class: selectedClass,
-        studentName: studentName,
-        [field]: value,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
-    }
-    window.saveSocialEntry = saveSocialEntry;
-
-    function switchTab(tab) {
-      activeTab = tab;
-      render();
-    }
-    window.switchTab = switchTab;
-
-    function selectClass(cls) {
-      selectedClass = cls;
-      render();
-    }
-    window.selectClass = selectClass;
-
-    function selectTeacher(name) {
-      selectedTeacher = name;
-      render();
-    }
-    window.selectTeacher = selectTeacher;
-
-    function render() {
-      document.getElementById('btn-etkinlik').className = `tab-btn ${activeTab === 'etkinlik' ? 'active' : ''}`;
-      document.getElementById('btn-evrak').className = `tab-btn ${activeTab === 'evrak' ? 'active' : ''}`;
-
-      const contentArea = document.getElementById('content-area');
-
-      if (activeTab === 'etkinlik') {
-        const classStudents = students[selectedClass] || [];
-
-        contentArea.innerHTML = `
-          <div style="margin-bottom: 15px;">
-            <p style="font-size: 11px; color: #718096; margin-bottom: 6px; font-weight: bold;">SINIF SEÇİNİZ:</p>
-            <div class="chip-container">
-              ${classes.map(c => `
-                <button onclick="selectClass('${c}')" class="chip ${selectedClass === c ? 'active' : ''}">${c} Sınıfı</button>
+      if (currentStep === 'classes') {
+        app.innerHTML = `
+          ${renderHeader()}
+          <div class="p-6">
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4">Sınıf Seçiniz</h2>
+            <div class="grid grid-cols-2 gap-3">
+              ${data.classes.map(c => `
+                <button onclick="selectClass('${c}')" class="p-4 bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 rounded-xl font-bold text-slate-700 hover:text-indigo-700 shadow-sm transition-all text-center flex flex-col items-center justify-center space-y-1 group">
+                  <span class="text-lg group-hover:scale-110 transition-transform">🏫</span>
+                  <span>${c} Sınıfı</span>
+                </button>
               `).join('')}
             </div>
           </div>
-
-          <h3 style="font-size: 14px; color: #2b6cb0; margin-bottom: 10px;">📋 ${selectedClass} Sınıfı Sosyal Etkinlik Girişi</h3>
-
-          <table>
-            <thead>
-              <tr>
-                <th style="width: 30px;">#</th>
-                <th>Öğrenci Adı Soyadı</th>
-                <th style="width: 180px;">Sosyal Kulüp</th>
-                <th>Etkinlik / Görev</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${classStudents.map((st, index) => {
-                const key = `${selectedClass}_${st}`;
-                const stData = socialData[key] || {};
+        `;
+      } else if (currentStep === 'events') {
+        app.innerHTML = `
+          ${renderHeader()}
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-5">
+              <div class="flex items-center space-x-2">
+                <span class="text-lg font-bold text-slate-800">${selectedClass} Sınıfı</span>
+                <span class="text-xs bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full font-semibold">Etkinlik Seçimi</span>
+              </div>
+              <button onclick="goBack('classes')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg font-medium transition-colors">← Sınıf Değiştir</button>
+            </div>
+            <div class="space-y-3">
+              ${data.events.length === 0 ? '<p class="text-sm text-slate-400 text-center py-4">Henüz kayıtlı etkinlik bulunmuyor. Üç noktadan (⋮) ekleyebilirsiniz.</p>' : ''}
+              ${data.events.map(ev => {
+                const isCompleted = checkEventCompleted(selectedClass, ev.name);
                 return `
-                  <tr>
-                    <td>${index + 1}</td>
-                    <td style="font-weight: 600;">${st}</td>
-                    <td>
-                      <select onchange="saveSocialEntry('${st}', 'club', this.value)">
-                        <option value="">-- Kulüp Seçin --</option>
-                        <option value="Spor Kulübü" ${stData.club === 'Spor Kulübü' ? 'selected' : ''}>Spor Kulübü</option>
-                        <option value="Değerler Kulübü" ${stData.club === 'Değerler Kulübü' ? 'selected' : ''}>Değerler Kulübü</option>
-                        <option value="Kütüphanecilik Kulübü" ${stData.club === 'Kütüphanecilik Kulübü' ? 'selected' : ''}>Kütüphanecilik Kulübü</option>
-                        <option value="Görsel Sanatlar Kulübü" ${stData.club === 'Görsel Sanatlar Kulübü' ? 'selected' : ''}>Görsel Sanatlar Kulübü</option>
-                        <option value="Kızılay Kulübü" ${stData.club === 'Kızılay Kulübü' ? 'selected' : ''}>Kızılay Kulübü</option>
-                        <option value="Yeşilay Kulübü" ${stData.club === 'Yeşilay Kulübü' ? 'selected' : ''}>Yeşilay Kulübü</option>
-                      </select>
-                    </td>
-                    <td>
-                      <input type="text" value="${stData.activity \vert{}\vert{} ''}" onblur="saveSocialEntry('${st}', 'activity', this.value)" placeholder="Etkinlik adını girin...">
-                    </td>
-                  </tr>
+                  <div class="p-4 rounded-xl border flex justify-between items-center transition-all ${isCompleted ? 'bg-emerald-50/60 border-emerald-200 text-emerald-900 shadow-sm' : 'bg-white border-slate-200 shadow-sm'}">
+                    <div class="flex-1 cursor-pointer pr-3" onclick="selectEvent('${ev.id}')">
+                      <div class="flex items-center space-x-2">
+                        <span class="font-bold text-sm text-slate-800 hover:text-indigo-600">${ev.name}</span>${isCompleted ? '<span class="bg-emerald-100 text-emerald-700 font-bold text-[10px] px-2 py-0.5 rounded-full">✔️ Tamamlandı</span>' : ''}
+                      </div>
+                      <p class="text-xs text-slate-500 font-medium mt-0.5">📅 Tarih: ${ev.date || 'Belirtilmedi'}</p>
+                    </div>
+                    <div class="flex items-center space-x-1 border-l border-slate-100 pl-2">
+                      <button onclick="editEventDirectly('${ev.id}')" title="Düzenle" class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors text-xs font-semibold">✏️</button>
+                      <button onclick="deleteEventDirectly('${ev.id}')" title="Sil" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-xs font-semibold">🗑️</button>
+                      <button onclick="selectEvent('${ev.id}')" class="ml-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs rounded-lg transition-colors">Giriş Yap →</button>
+                    </div>
+                  </div>
                 `;
               }).join('')}
-            </tbody>
-          </table>
-        `;
-      } else {
-        contentArea.innerHTML = `
-          <div style="margin-bottom: 15px;">
-            <p style="font-size: 11px; color: #718096; margin-bottom: 6px; font-weight: bold;">ÖĞRETMEN SEÇİNİZ:</p>
-            <div class="chip-container">
-              ${teachers.map(t => `
-                <button onclick="selectTeacher('${t}')" class="chip ${selectedTeacher === t ? 'active' : ''}">${t}</button>
-              `).join('')}
             </div>
           </div>
-
-          ${selectedTeacher ? `
-            <h3 style="font-size: 14px; color: #2b6cb0; margin-bottom: 10px;">📁 Evrak Listesi (${selectedTeacher})</h3>
-            <p style="font-size: 12px; color: #a0aec0;">Evrak yükleme ve teslim takibi modülü aktif.</p>
-          ` : `
-            <p style="font-size: 12px; color: #a0aec0; text-align: center; padding: 20px;">Lütfen yukarıdan isminizi seçiniz.</p>
-          `}
+        `;
+      } else if (currentStep === 'students') {
+        if (!selectedEventObj) {
+          goBack('events');
+          return;
+        }
+        const studentList = data.students[selectedClass] || [];
+        app.innerHTML = `
+          ${renderHeader()}
+          <div class="p-6">
+            <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-4">
+              <div>
+                <h2 class="text-base font-bold text-slate-800">${selectedEventObj.name}</h2>
+                <p class="text-xs text-slate-500 font-medium">${selectedClass} Sınıfı • Tarih: ${selectedEventObj.date}</p>
+              </div>
+              <button onclick="goBack('events')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg font-medium transition-colors">← Etkinlikler</button>
+            </div>
+            <div class="space-y-2.5 my-4 max-h-[50vh] overflow-y-auto pr-1">
+              ${studentList.map(st => {
+                const key = `${selectedClass}_${selectedEventObj.name}_${st}`;
+                const val = records[key];
+                return `
+                  <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex flex-col space-y-2">
+                    <span class="font-semibold text-xs text-slate-700 uppercase tracking-wide">${st}</span>
+                    <div class="flex space-x-2">
+                      <button onclick="toggleSelect('${st}', 'katilim')" class="flex-1 py-1.5 text-xs font-bold rounded-lg border transition-all ${val === 'katilim' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-100'}">Katılım</button>
+                      <button onclick="toggleSelect('${st}', 'performans')" class="flex-1 py-1.5 text-xs font-bold rounded-lg border transition-all ${val === 'performans' ? 'bg-purple-600 text-white border-purple-600 shadow-sm' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-100'}">Performans</button>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+            <button onclick="saveData()" class="w-full mt-2 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition-all text-sm">Kaydet ve Tamamla</button>
+          </div>
         `;
       }
     }
 
-    render();
-    initFirebase();
-  </script>
+    async function addNewEvent() {
+      isMenuOpen = false;
+      const name = prompt("Sosyal Etkinlik Adını Giriniz:");
+      if (!name || name.trim() === "") return;
+      const date = prompt("Tarih veya Tarih Aralığını Giriniz (Örn: 21-25 Eylül 2026):", "21-25 Eylül 2026");
 
+      await window.addDoc(window.collection(window.db, "events"), {
+        name: name.trim(),
+        date: date ? date.trim() : 'Belirtilmedi'
+      });
+    }
+
+    async function editEventDirectly(id) {
+      const eventObj = data.events.find(e => e.id === id);
+      if (!eventObj) return;
+
+      const newName = prompt("Etkinlik Adını Düzenleyin:", eventObj.name);
+      if (!newName || newName.trim() === "") return;
+
+      const newDate = prompt("Tarihi Düzenleyin:", eventObj.date);
+
+      await window.updateDoc(window.doc(window.db, "events", id), {
+        name: newName.trim(),
+        date: newDate ? newDate.trim() : eventObj.date
+      });
+    }
+
+    async function deleteEventDirectly(id) {
+      const eventObj = data.events.find(e => e.id === id);
+      if (!eventObj) return;
+
+      if (confirm(`"${eventObj.name}" etkinliğini silmek istediğinize emin misiniz?`)) {
+        await window.deleteDoc(window.doc(window.db, "events", id));
+      }
+    }
+
+    async function toggleSelect(student, type) {
+      const key = `${selectedClass}_${selectedEventObj.name}_${student}`;
+      const newVal = records[key] === type ? null : type;
+      
+      if (newVal) {
+        await window.setDoc(window.doc(window.db, "records", key), { val: newVal });
+        records[key] = newVal;
+      } else {
+        await window.deleteDoc(window.doc(window.db, "records", key));
+        delete records[key];
+      }
+      render();
+    }
+
+    function showMissingClasses() {
+      isMenuOpen = false;
+      let targetEventObj = selectedEventObj || data.events[0];
+      if (!targetEventObj) return;
+      let uncompletedClasses = data.classes.filter(c => !checkEventCompleted(c, targetEventObj.name));
+      alert(uncompletedClasses.length === 0 ? `"${targetEventObj.name}" için tüm sınıflarda veri girişi başlatılmış! 🎉` : `"${targetEventObj.name}" için Henüz Giriş Yapmayan Sınıflar:\n\n` + uncompletedClasses.map(c => `• ${c} Sınıfı`).join("\n"));
+    }
+
+    function showMissingStudents() {
+      isMenuOpen = false;
+      let targetEventObj = selectedEventObj || data.events[0];
+      if (!targetEventObj) return;
+      let missingList = [];
+      data.classes.forEach(c => {
+        (data.students[c] || []).forEach(st => {
+          if (!records[`${c}_${targetEventObj.name}_${st}`]) missingList.push(`[${c}] ${st}`);
+        });
+      });
+      alert(missingList.length === 0 ? `"${targetEventObj.name}" etkinliği için tüm öğrencilerin girişi tamamlanmış! 🎉` : `"${targetEventObj.name}" için Giriş Yapılmayan Öğrenciler (${missingList.length} Kişi):\n\n` + missingList.join("\n"));
+    }
+
+    function selectClass(c) { selectedClass = c; currentStep = 'events'; saveState(); render(); }
+    function selectEvent(id) { selectedEventId = id; selectedEventObj = data.events.find(e => e.id === id); currentStep = 'students'; saveState(); render(); }
+    function goBack(step) { currentStep = step; saveState(); render(); }
+    function saveData() { alert('Kayıtlar bulut veritabanında saklandı!'); currentStep = 'events'; saveState(); render(); }
+    function checkEventCompleted(sClass, eventName) { return Object.keys(records).some(k => k.startsWith(`${sClass}_${eventName}_`)); }
+
+    initFirebaseListener();
+    render();
+  </script>
 </body>
 </html>
