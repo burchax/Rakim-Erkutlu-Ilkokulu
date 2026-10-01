@@ -124,6 +124,36 @@
       font-weight: 600;
     }
 
+    /* Tarih Ayırıcı Çizgi Stili */
+    .date-divider {
+      position: relative;
+      text-align: center;
+      margin: 16px 0 12px 0;
+    }
+    .date-divider::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background-color: #cbd5e0;
+      z-index: 1;
+    }
+    .date-badge {
+      position: relative;
+      z-index: 2;
+      background-color: #ffffff;
+      border: 1px solid #cbd5e0;
+      color: #4a5568;
+      padding: 3px 12px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      display: inline-block;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+
     /* Kayıt Listesi Stilleri */
     .item-card {
       background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
@@ -329,6 +359,7 @@
       renderIdareTab();
     };
 
+    // İdare Kayıtlarını Ekrana Basma (Yeniden Eskiye Sıralama & Tarih Çizgili)
     function renderIdareTab() {
       const container = document.getElementById('idareItemsList');
       const searchQuery = document.getElementById('searchInput').value.trim().toLowerCase();
@@ -347,22 +378,48 @@
         return;
       }
 
-      container.innerHTML = filtered.map(item => `
-        <div class="item-card">
-          ${searchQuery !== "" ? `<span class="item-category-tag">${categoryNames[item.category] || item.category}</span>` : ''}
-          <div class="item-header">
-            <div class="checkbox-container">
-              <input type="checkbox" class="item-checkbox" ${item.approved ? 'checked' : ''} onchange="toggleApproval('${item.id}', this.checked)" title="Müdür Onayı Ver/Kaldır">
+      // En yeniden eskiye doğru sıralama (createdAt Zaman Damgasına göre)
+      filtered.sort((a, b) => {
+        const timeA = a.createdAt ? (a.createdAt.seconds || new Date(a.createdAt).getTime()) : 0;
+        const timeB = b.createdAt ? (b.createdAt.seconds || new Date(b.createdAt).getTime()) : 0;
+        return timeB - timeA;
+      });
+
+      let htmlOutput = "";
+      let lastDate = "";
+
+      filtered.forEach(item => {
+        const itemDate = item.fullDateLabel || item.date || 'Tarihsiz';
+
+        // Gün atlandığında araya çizgi ve kutu içinde tarih ekle
+        if (itemDate !== lastDate) {
+          htmlOutput += `
+            <div class="date-divider">
+              <span class="date-badge">📅 ${itemDate}</span>
             </div>
-            <span class="item-title" style="${item.approved ? 'text-decoration: line-through; color:#a0aec0;' : ''}">${item.text}</span>
-            <span class="item-date">${item.date || ''}</span>
+          `;
+          lastDate = itemDate;
+        }
+
+        htmlOutput += `
+          <div class="item-card">
+            ${searchQuery !== "" ? `<span class="item-category-tag">${categoryNames[item.category] || item.category}</span>` : ''}
+            <div class="item-header">
+              <div class="checkbox-container">
+                <input type="checkbox" class="item-checkbox" ${item.approved ? 'checked' : ''} onchange="toggleApproval('${item.id}', this.checked)" title="Müdür Onayı Ver/Kaldır">
+              </div>
+              <span class="item-title" style="${item.approved ? 'text-decoration: line-through; color:#a0aec0;' : ''}">${item.text}</span>
+              <span class="item-date">${item.date || ''}</span>
+            </div>
+            <div class="item-actions">
+              <button class="action-btn btn-edit" onclick="openEditModal('${item.id}', '${item.text.replace(/'/g, "\\'")}')">✏️ Düzenle</button>
+              <button class="action-btn btn-delete" onclick="deleteItem('${item.id}')">🗑️ Sil</button>
+            </div>
           </div>
-          <div class="item-actions">
-            <button class="action-btn btn-edit" onclick="openEditModal('${item.id}', '${item.text.replace(/'/g, "\\'")}')">✏️ Düzenle</button>
-            <button class="action-btn btn-delete" onclick="deleteItem('${item.id}')">🗑️ Sil</button>
-          </div>
-        </div>
-      `).join('');
+        `;
+      });
+
+      container.innerHTML = htmlOutput;
     }
 
     window.toggleApproval = async function(id, status) {
@@ -391,7 +448,9 @@
       const text = document.getElementById('modalInput').value.trim();
       if (!text) return;
 
-      const today = new Date().toLocaleDateString('tr-TR');
+      const now = new Date();
+      const shortDate = now.toLocaleDateString('tr-TR'); // Örn: 01.10.2026
+      const fullDateLabel = now.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }); // Örn: 1 Ekim 2026
 
       if (editingId) {
         await window.updateDoc(window.doc(window.db, "idare_records", editingId), { text: text });
@@ -399,7 +458,8 @@
         await window.addDoc(window.collection(window.db, "idare_records"), {
           category: currentSubTab,
           text: text,
-          date: today,
+          date: shortDate,
+          fullDateLabel: fullDateLabel,
           approved: false,
           createdAt: new Date()
         });
