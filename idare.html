@@ -359,6 +359,40 @@
       renderIdareTab();
     };
 
+    // Tarihi standart '1 Ekim 2026' formatına çeviren yardımcı fonksiyon
+    function getStandardFormattedDate(createdAtObj, fallbackLabel, fallbackDate) {
+      if (createdAtObj) {
+        let dateVal;
+        if (createdAtObj.seconds) {
+          dateVal = new Date(createdAtObj.seconds * 1000);
+        } else if (createdAtObj instanceof Date) {
+          dateVal = createdAtObj;
+        } else {
+          dateVal = new Date(createdAtObj);
+        }
+
+        if (!isNaN(dateVal.getTime())) {
+          return dateVal.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+        }
+      }
+
+      // Eğer createdAt yoksa fallback olarak kayıtlı metni analiz et veya dök
+      if (fallbackLabel && fallbackLabel.includes('Ekim')) return fallbackLabel;
+      if (fallbackDate) {
+        const parts = fallbackDate.split('.');
+        if (parts.length === 3) {
+          const months = ["Ocak", "Şubat", "Mart", "Nisan", "Mayıs", "Haziran", "Temmuz", "Ağustos", "Eylül", "Ekim", "Kasım", "Aralık"];
+          const day = parseInt(parts[0], 10);
+          const monthIdx = parseInt(parts[1], 10) - 1;
+          const year = parts[2];
+          if (months[monthIdx]) {
+            return `${day} ${months[monthIdx]} ${year}`;
+          }
+        }
+      }
+      return fallbackLabel || fallbackDate || 'Tarihsiz';
+    }
+
     // İdare Kayıtlarını Ekrana Basma (Yeniden Eskiye Sıralama & Tarih Çizgili)
     function renderIdareTab() {
       const container = document.getElementById('idareItemsList');
@@ -380,8 +414,8 @@
 
       // En yeniden eskiye doğru sıralama (createdAt Zaman Damgasına göre)
       filtered.sort((a, b) => {
-        const timeA = a.createdAt ? (a.createdAt.seconds || new Date(a.createdAt).getTime()) : 0;
-        const timeB = b.createdAt ? (b.createdAt.seconds || new Date(b.createdAt).getTime()) : 0;
+        const timeA = a.createdAt ? (a.createdAt.seconds ? a.createdAt.seconds * 1000 : new Date(a.createdAt).getTime()) : 0;
+        const timeB = b.createdAt ? (b.createdAt.seconds ? b.createdAt.seconds * 1000 : new Date(b.createdAt).getTime()) : 0;
         return timeB - timeA;
       });
 
@@ -389,16 +423,17 @@
       let lastDate = "";
 
       filtered.forEach(item => {
-        const itemDate = item.fullDateLabel || item.date || 'Tarihsiz';
+        // Her kayıt için standart "1 Ekim 2026" başlık etiketi üretilir
+        const displayDateBadge = getStandardFormattedDate(item.createdAt, item.fullDateLabel, item.date);
 
         // Gün atlandığında araya çizgi ve kutu içinde tarih ekle
-        if (itemDate !== lastDate) {
+        if (displayDateBadge !== lastDate) {
           htmlOutput += `
             <div class="date-divider">
-              <span class="date-badge">📅 ${itemDate}</span>
+              <span class="date-badge">📅 ${displayDateBadge}</span>
             </div>
           `;
-          lastDate = itemDate;
+          lastDate = displayDateBadge;
         }
 
         htmlOutput += `
