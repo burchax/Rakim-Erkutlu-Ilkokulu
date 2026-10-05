@@ -184,6 +184,38 @@
     .modal-content { background: white; padding: 20px; border-radius: 10px; width: 90%; max-width: 400px; }
     .modal-content h3 { margin-bottom: 12px; font-size: 15px; color: #2d3748; }
     .modal-content textarea { width: 100%; height: 80px; padding: 8px; border: 1px solid #cbd5e0; border-radius: 6px; margin-bottom: 12px; font-family: inherit; }
+    
+    /* Modal Tarih Alanı Stilleri */
+    .modal-date-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 15px;
+      background: #f7fafc;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #edf2f7;
+    }
+    .modal-date-checkbox {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #2d3748;
+      cursor: pointer;
+    }
+    .modal-date-picker {
+      padding: 6px 10px;
+      border: 1px solid #cbd5e0;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: inherit;
+      outline: none;
+      width: 100%;
+    }
+    .modal-date-picker:focus { border-color: #3182ce; }
+
     .modal-buttons { display: flex; justify-content: flex-end; gap: 8px; }
     .btn-modal { padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; font-size: 12px; }
     .btn-cancel { background: #e2e8f0; color: #4a5568; }
@@ -276,6 +308,16 @@
     <div class="modal-content">
       <h3 id="modalTitle">Yeni Kayıt Ekle</h3>
       <textarea id="modalInput" placeholder="Açıklama / Detay yazınız..."></textarea>
+      
+      <!-- Tarih Seçim Alanı -->
+      <div class="modal-date-section">
+        <label class="modal-date-checkbox">
+          <input type="checkbox" id="todayCheckbox" checked onchange="toggleDatePicker()">
+          <span>Bugün</span>
+        </label>
+        <input type="date" id="modalDatePicker" class="modal-date-picker" style="display: none;">
+      </div>
+
       <div class="modal-buttons">
         <button class="btn-modal btn-cancel" onclick="closeModal()">İptal</button>
         <button class="btn-modal btn-save" onclick="saveData()">Kaydet</button>
@@ -359,6 +401,26 @@
       renderIdareTab();
     };
 
+    // Tarihi YYYY-MM-DD formatına dönüştürür (Takvim inputu için)
+    function formatDateToInput(dateObj) {
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    // Modal içindeki Bugün kutusu tiklendiğinde/kaldırıldığında takvim görünürlüğünü yönetir
+    window.toggleDatePicker = function() {
+      const isToday = document.getElementById('todayCheckbox').checked;
+      const datePicker = document.getElementById('modalDatePicker');
+      if (isToday) {
+        datePicker.style.display = "none";
+        datePicker.value = formatDateToInput(new Date());
+      } else {
+        datePicker.style.display = "block";
+      }
+    };
+
     // Tarihi standart '1 Ekim 2026' formatına çeviren yardımcı fonksiyon
     function getStandardFormattedDate(createdAtObj, fallbackLabel, fallbackDate) {
       if (createdAtObj) {
@@ -376,7 +438,6 @@
         }
       }
 
-      // Eğer createdAt yoksa fallback olarak kayıtlı metni analiz et veya dök
       if (fallbackLabel && fallbackLabel.includes('Ekim')) return fallbackLabel;
       if (fallbackDate) {
         const parts = fallbackDate.split('.');
@@ -423,10 +484,8 @@
       let lastDate = "";
 
       filtered.forEach(item => {
-        // Her kayıt için standart "1 Ekim 2026" başlık etiketi üretilir
         const displayDateBadge = getStandardFormattedDate(item.createdAt, item.fullDateLabel, item.date);
 
-        // Gün atlandığında araya çizgi ve kutu içinde tarih ekle
         if (displayDateBadge !== lastDate) {
           htmlOutput += `
             <div class="date-divider">
@@ -447,7 +506,7 @@
               <span class="item-date">${item.date || ''}</span>
             </div>
             <div class="item-actions">
-              <button class="action-btn btn-edit" onclick="openEditModal('${item.id}', '${item.text.replace(/'/g, "\\'")}')">✏️ Düzenle</button>
+              <button class="action-btn btn-edit" onclick="openEditModal('${item.id}')">✏️ Düzenle</button>
               <button class="action-btn btn-delete" onclick="deleteItem('${item.id}')">🗑️ Sil</button>
             </div>
           </div>
@@ -465,13 +524,46 @@
       editingId = null;
       document.getElementById('modalTitle').innerText = "Yeni Kayıt Ekle (" + categoryNames[currentSubTab] + ")";
       document.getElementById('modalInput').value = "";
+      
+      const todayCheckbox = document.getElementById('todayCheckbox');
+      const datePicker = document.getElementById('modalDatePicker');
+      
+      todayCheckbox.checked = true;
+      datePicker.value = formatDateToInput(new Date());
+      toggleDatePicker();
+
       document.getElementById('dataModal').style.display = "flex";
     };
 
-    window.openEditModal = function(id, text) {
+    window.openEditModal = function(id) {
       editingId = id;
+      const record = idareRecords.find(r => r.id === id);
+      if (!record) return;
+
       document.getElementById('modalTitle').innerText = "Kayıt Düzenle";
-      document.getElementById('modalInput').value = text;
+      document.getElementById('modalInput').value = record.text;
+
+      const todayCheckbox = document.getElementById('todayCheckbox');
+      const datePicker = document.getElementById('modalDatePicker');
+
+      // Kaydın mevcut tarihini incele
+      let recordDate = new Date();
+      if (record.createdAt) {
+        recordDate = record.createdAt.seconds ? new Date(record.createdAt.seconds * 1000) : new Date(record.createdAt);
+      }
+
+      const todayStr = formatDateToInput(new Date());
+      const recordStr = formatDateToInput(recordDate);
+
+      if (recordStr === todayStr) {
+        todayCheckbox.checked = true;
+        datePicker.value = todayStr;
+      } else {
+        todayCheckbox.checked = false;
+        datePicker.value = recordStr;
+      }
+
+      toggleDatePicker();
       document.getElementById('dataModal').style.display = "flex";
     };
 
@@ -483,12 +575,26 @@
       const text = document.getElementById('modalInput').value.trim();
       if (!text) return;
 
-      const now = new Date();
-      const shortDate = now.toLocaleDateString('tr-TR'); // Örn: 01.10.2026
-      const fullDateLabel = now.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }); // Örn: 1 Ekim 2026
+      const isToday = document.getElementById('todayCheckbox').checked;
+      const datePickerValue = document.getElementById('modalDatePicker').value;
+
+      let selectedDate = new Date();
+      if (!isToday && datePickerValue) {
+        // Seçilen takvim değerini parçalayarak tarih objesi oluştur
+        const [year, month, day] = datePickerValue.split('-').map(Number);
+        selectedDate = new Date(year, month - 1, day);
+      }
+
+      const shortDate = selectedDate.toLocaleDateString('tr-TR'); // Örn: 05.10.2026
+      const fullDateLabel = selectedDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' }); // Örn: 5 Ekim 2026
 
       if (editingId) {
-        await window.updateDoc(window.doc(window.db, "idare_records", editingId), { text: text });
+        await window.updateDoc(window.doc(window.db, "idare_records", editingId), { 
+          text: text,
+          date: shortDate,
+          fullDateLabel: fullDateLabel,
+          createdAt: selectedDate
+        });
       } else {
         await window.addDoc(window.collection(window.db, "idare_records"), {
           category: currentSubTab,
@@ -496,7 +602,7 @@
           date: shortDate,
           fullDateLabel: fullDateLabel,
           approved: false,
-          createdAt: new Date()
+          createdAt: selectedDate
         });
       }
       closeModal();
