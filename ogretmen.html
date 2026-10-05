@@ -40,7 +40,7 @@
   <script>
     const data = {
       classes: ['1-A', '1-B', '2-A', '2-B', '3-A', '3-B', '4-A', '4-B'],
-      // Öğretmen İsimleri A'dan Z'ye Sıralandı
+      // Öğretmen İsimleri A'dan Z'ye Sıralandı ve Kadın Öğretmen Simgesi Eklendi
       teachers: [
         'AYLİN UYGUN',
         'ERGÜL TANRISEVEN',
@@ -389,6 +389,7 @@
       });
     }
 
+    // Hem İsim Hem Tarih Düzenleme Hatası Giderildi
     async function editEventDirectly(id) {
       const eventObj = data.events.find(e => e.id === id);
       if (!eventObj) return;
@@ -396,9 +397,9 @@
       const newName = prompt("Etkinlik Adını Düzenleyin:", eventObj.name);
       if (!newName || newName.trim() === "") return;
 
-      const newDate = prompt("Tarihi Düzenleyin:", eventObj.date);
+      const newDate = prompt("Tarihi Düzenleyin:", eventObj.date || "");
 
-      await window.updateDoc(window.doc(window.doc(window.db, "events", id)), {
+      await window.updateDoc(window.doc(window.db, "events", id), {
         name: newName.trim(),
         date: newDate ? newDate.trim() : eventObj.date
       });
