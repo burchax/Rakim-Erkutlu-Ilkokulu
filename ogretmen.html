@@ -40,7 +40,6 @@
   <script>
     const data = {
       classes: ['1-A', '1-B', '2-A', '2-B', '3-A', '3-B', '4-A', '4-B'],
-      // Öğretmen İsimleri A'dan Z'ye Sıralandı ve Kadın Öğretmen Simgesi Eklendi
       teachers: [
         'AYLİN UYGUN',
         'ERGÜL TANRISEVEN',
@@ -105,7 +104,6 @@
       { id: '38', title: 'Sınıf Rehberlik Yıl Sonu Çalışma Raporu', term: 'Yıl Sonu', deadline: 'Haziran Sonu', target: 'ALL' }
     ];
 
-    // Ekran Durumlarını Hafızada Tutma
     let activeTab = sessionStorage.getItem('activeTab') || 'social';
     let currentStep = sessionStorage.getItem('currentStep') || 'classes';
     let selectedClass = sessionStorage.getItem('selectedClass') || null;
@@ -133,7 +131,6 @@
         return;
       }
       
-      // Buluttan Canlı Etkinlik Dinleyicisi
       window.onSnapshot(window.collection(window.db, "events"), (snapshot) => {
         data.events = [];
         snapshot.forEach((doc) => {
@@ -146,7 +143,6 @@
         render();
       });
 
-      // Buluttan Canlı Öğrenci Kayıt Dinleyicisi
       window.onSnapshot(window.collection(window.db, "records"), (snapshot) => {
         records = {};
         snapshot.forEach((doc) => {
@@ -155,7 +151,6 @@
         render();
       });
 
-      // Evrak Takip Dinleyicisi
       try {
         window.onSnapshot(window.collection(window.db, "teacher_docs"), (snapshot) => {
           docsData = {};
@@ -198,7 +193,11 @@
                 <button onclick="toggleMenu()" class="p-2 text-indigo-100 hover:text-white hover:bg-white/10 rounded-lg transition-all text-xl font-bold leading-none">&#8942;</button>
                 ${isMenuOpen ? `
                   <div class="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-slate-100 z-50 py-1.5 text-slate-700">
-                    <button onclick="addNewEvent()" class="flex items-center w-full text-left px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-600 font-medium transition-colors"><span class="mr-2">➕</span> Yeni Etkinlik Ekle</button>
+                    ${currentStep === 'classes' ? `
+                      <button onclick="addNewEvent('ALL')" class="flex items-center w-full text-left px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-600 font-medium transition-colors"><span class="mr-2">➕</span> Genel Etkinlik Ekle (Tüm Sınıflar)</button>
+                    ` : `
+                      <button onclick="addNewEvent('${selectedClass}')" class="flex items-center w-full text-left px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-600 font-medium transition-colors"><span class="mr-2">➕</span> Sadece ${selectedClass} Sınıfına Etkinlik Ekle</button>
+                    `}
                     <button onclick="showMissingClasses()" class="flex items-center w-full text-left px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-600 font-medium border-t border-slate-100 transition-colors"><span class="mr-2">🏫</span> Tamamlanmayan Sınıflar</button>
                     <button onclick="showMissingStudents()" class="flex items-center w-full text-left px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-600 font-medium border-t border-slate-100 transition-colors"><span class="mr-2">📋</span> Verileri Eksik Öğrenciler</button>
                   </div>
@@ -307,6 +306,9 @@
           </div>
         `;
       } else if (currentStep === 'events') {
+        // Sadece Genel (ALL) veya Seçili Sınıfa Özel Etkinlikleri Filtrele
+        const filteredEvents = data.events.filter(ev => !ev.targetClass || ev.targetClass === 'ALL' || ev.targetClass === selectedClass);
+
         app.innerHTML = `
           ${renderHeader()}
           <div class="p-6">
@@ -318,19 +320,22 @@
               <button onclick="goBack('classes')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg font-medium transition-colors">← Sınıf Değiştir</button>
             </div>
             <div class="space-y-3">
-              ${data.events.length === 0 ? '<p class="text-sm text-slate-400 text-center py-4">Henüz kayıtlı etkinlik bulunmuyor. Üç noktadan (⋮) ekleyebilirsiniz.</p>' : ''}
-              ${data.events.map(ev => {
+              ${filteredEvents.length === 0 ? '<p class="text-sm text-slate-400 text-center py-4">Bu sınıf için kayıtlı etkinlik bulunmuyor. Üç noktadan (⋮) ekleyebilirsiniz.</p>' : ''}
+              ${filteredEvents.map(ev => {
                 const isCompleted = checkEventCompleted(selectedClass, ev.name);
+                const isClassSpecific = ev.targetClass && ev.targetClass !== 'ALL';
+
                 return `
                   <div class="p-4 rounded-xl border flex justify-between items-center transition-all ${isCompleted ? 'bg-emerald-50/60 border-emerald-200 text-emerald-900 shadow-sm' : 'bg-white border-slate-200 shadow-sm'}">
                     <div class="flex-1 cursor-pointer pr-3" onclick="selectEvent('${ev.id}')">
-                      <div class="flex items-center space-x-2">
+                      <div class="flex items-center space-x-2 flex-wrap gap-1">
                         <span class="font-bold text-sm text-slate-800 hover:text-indigo-600">${ev.name}</span>${isCompleted ? '<span class="bg-emerald-100 text-emerald-700 font-bold text-[10px] px-2 py-0.5 rounded-full">✔️ Tamamlandı</span>' : ''}
+                        ${isClassSpecific ? `<span class="bg-purple-100 text-purple-700 font-bold text-[10px] px-2 py-0.5 rounded-full">🔒 Sadece ${selectedClass}</span>` : ''}
                       </div>
                       <p class="text-xs text-slate-500 font-medium mt-0.5">📅 Tarih: ${ev.date || 'Belirtilmedi'}</p>
                     </div>
                     <div class="flex items-center space-x-1 border-l border-slate-100 pl-2">
-                      <button onclick="editEventDirectly('${ev.id}')" title="Düzenle" class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors text-xs font-semibold">✏️</button>
+                      <button onclick="editEventDirectly('${ev.id}')" title="Düzenle" class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors text-xs font-semibold">✏️️</button>
                       <button onclick="deleteEventDirectly('${ev.id}')" title="Sil" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-xs font-semibold">🗑</button>
                       <button onclick="selectEvent('${ev.id}')" class="ml-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs rounded-lg transition-colors">Giriş Yap →</button>
                     </div>
@@ -377,19 +382,25 @@
       }
     }
 
-    async function addNewEvent() {
+    // Genel Veya Sınıfa Özel Etkinlik Ekleme
+    async function addNewEvent(targetClass = 'ALL') {
       isMenuOpen = false;
-      const name = prompt("Sosyal Etkinlik Adını Giriniz:");
+      const promptTitle = targetClass === 'ALL' 
+        ? "Tüm Sınıflar İçin Genel Etkinlik Adı Giriniz:" 
+        : `Sadece ${targetClass} Sınıfı İçin Etkinlik Adı Giriniz:`;
+
+      const name = prompt(promptTitle);
       if (!name || name.trim() === "") return;
       const date = prompt("Tarih veya Tarih Aralığını Giriniz (Örn: 21-25 Eylül 2026):", "21-25 Eylül 2026");
 
       await window.addDoc(window.collection(window.db, "events"), {
         name: name.trim(),
-        date: date ? date.trim() : 'Belirtilmedi'
+        date: date ? date.trim() : 'Belirtilmedi',
+        targetClass: targetClass
       });
     }
 
-    // Hem İsim Hem Tarih Düzenleme Hatası Giderildi
+    // İsim ve Tarih Düzenleme
     async function editEventDirectly(id) {
       const eventObj = data.events.find(e => e.id === id);
       if (!eventObj) return;
