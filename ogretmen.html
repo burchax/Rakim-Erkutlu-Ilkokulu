@@ -50,6 +50,16 @@
         'İLKAY YEGANE',
         'YÜKSEL TANRIVERDİ'
       ],
+      classTeacherMap: {
+        '1-A': 'YÜKSEL TANRIVERDİ',
+        '1-B': 'ESRA ALACA',
+        '2-A': 'İLKAY YEGANE',
+        '2-B': 'HATİCE KIRKIZ',
+        '3-A': 'ERGÜL TANRISEVEN',
+        '3-B': 'GÜLSEHER KONAKLI',
+        '4-A': 'GÜL UNGAN',
+        '4-B': 'AYLİN UYGUN'
+      },
       events: [],
       students: {
         '1-A': ['ALYA DEVRİM AYDIN', 'AYŞE NİSA ECEVİT', 'AZRA ÇATAN', 'EFE MEHMET AKTAN', 'EMRAH SERPEN', 'MEHMET SELİM ÖRDEK', 'MİRAN EMİN DEMİR', 'YAREN BÜLBÜL', 'MİRAÇ ASİL YÖRE', 'ROJHAT ECEVİT', 'MUHAMMED NAIF', 'YUSUF DABDABEN', 'HALE HIRFAN', 'SEM HIRFAN', 'YAKUP EL UGLA', 'VAHID TAHHAN', 'NIDAL NAIF', 'AYŞE HIRFAN', 'MIRAL ELHACTALİB'],
@@ -116,37 +126,14 @@
     let adminApprovals = {};
     let isMenuOpen = false;
 
-    // Türkçe Yazıyla Girilen Tarihi Kronolojik Sayıya Çeviren Akıllı Fonksiyon
     function parseDateToValue(dateStr) {
       if (!dateStr) return 0;
-
-      const months = {
-        'ocak': 1, 'şubat': 2, 'mart': 3, 'nisan': 4, 'mayıs': 5, 'haziran': 6,
-        'temmuz': 7, 'ağustos': 8, 'eylül': 9, 'ekim': 10, 'kasım': 11, 'aralık': 12
-      };
-
+      const months = { 'ocak': 1, 'şubat': 2, 'mart': 3, 'nisan': 4, 'mayıs': 5, 'haziran': 6, 'temmuz': 7, 'ağustos': 8, 'eylül': 9, 'ekim': 10, 'kasım': 11, 'aralık': 12 };
       const str = dateStr.toLowerCase().trim();
-      let year = 2026;
-      let month = 1;
-      let day = 1;
-
-      // Yılı bul (Örn: 2026)
-      const yearMatch = str.match(/20\d\d/);
-      if (yearMatch) year = parseInt(yearMatch[0]);
-
-      // Ayı bul
-      for (let m in months) {
-        if (str.includes(m)) {
-          month = months[m];
-          break;
-        }
-      }
-
-      // Günü bul (Örn: "2 Ekim" veya "21-25 Eylül" için ilk sayı)
-      const dayMatch = str.match(/\d+/);
-      if (dayMatch) day = parseInt(dayMatch[0]);
-
-      // YYYYMMDD biçiminde benzersiz kıyaslama sayısı üret
+      let year = 2026; let month = 1; let day = 1;
+      const yearMatch = str.match(/20\d\d/); if (yearMatch) year = parseInt(yearMatch[0]);
+      for (let m in months) { if (str.includes(m)) { month = months[m]; break; } }
+      const dayMatch = str.match(/\d+/); if (dayMatch) day = parseInt(dayMatch[0]);
       return year * 10000 + month * 100 + day;
     }
 
@@ -171,15 +158,11 @@
           data.events.push({ id: doc.id, ...doc.data() });
         });
 
-        // Akıllı Tarih Sıralaması: Takvimdeki EN YENİ tarih en üstte, eskiler altta!
         data.events.sort((a, b) => {
           const valA = parseDateToValue(a.date);
           const valB = parseDateToValue(b.date);
-
-          if (valA !== valB) {
-            return valB - valA; // Takvim tarihine göre azalan
-          }
-          return (b.createdAt || 0) - (a.createdAt || 0); // Aynı tarihse eklenme sırasına göre
+          if (valA !== valB) return valB - valA;
+          return (b.createdAt || 0) - (a.createdAt || 0);
         });
 
         if (selectedEventId) {
@@ -238,6 +221,7 @@
                 <button onclick="toggleMenu()" class="p-2 text-indigo-100 hover:text-white hover:bg-white/10 rounded-lg transition-all text-xl font-bold leading-none">&#8942;</button>
                 ${isMenuOpen ? `
                   <div class="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-slate-100 z-50 py-1.5 text-slate-700">
+                    <button onclick="showReportTable()" class="flex items-center w-full text-left px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-600 font-bold text-indigo-700 border-b border-slate-100 transition-colors"><span class="mr-2">📊</span> Etkinlik Raporu & İstatistikler</button>
                     ${currentStep === 'classes' ? `
                       <button onclick="addNewEvent('ALL')" class="flex items-center w-full text-left px-4 py-2.5 text-sm hover:bg-indigo-50 hover:text-indigo-600 font-medium transition-colors"><span class="mr-2">➕</span> Genel Etkinlik Ekle (Tüm Sınıflar)</button>
                     ` : `
@@ -258,8 +242,117 @@
       `;
     }
 
+    function showReportTable() {
+      isMenuOpen = false;
+      currentStep = 'report';
+      saveState();
+      render();
+    }
+
+    function renderReportPage() {
+      let totalStudentParticipations = 0;
+
+      const reportRows = data.events.map(ev => {
+        let eventStudentCount = 0;
+        let participatingClassesSet = new Set();
+        let participatingTeachersSet = new Set();
+
+        // Her sınıf ve öğrenci için kontrol et
+        data.classes.forEach(cls => {
+          const studentList = data.students[cls] || [];
+          let classHasParticipation = false;
+
+          studentList.forEach(st => {
+            const key = `${cls}_${ev.name}_${st}`;
+            if (records[key]) {
+              eventStudentCount++;
+              classHasParticipation = true;
+            }
+          });
+
+          if (classHasParticipation) {
+            participatingClassesSet.add(cls);
+            if (data.classTeacherMap[cls]) {
+              participatingTeachersSet.add(`👩‍🏫 ${data.classTeacherMap[cls]}`);
+            }
+          }
+        });
+
+        totalStudentParticipations += eventStudentCount;
+
+        const classListText = Array.from(participatingClassesSet).join(', ') || '<span class="text-slate-300 italic">Yok</span>';
+        const teacherListText = Array.from(participatingTeachersSet).join(', ') || '<span class="text-slate-300 italic">Yok</span>';
+
+        return `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="p-3 border-b border-slate-100">
+              <div class="font-bold text-slate-800">${ev.name}</div>
+              <div class="text-[10px] text-slate-400">📅 ${ev.date || 'Belirtilmedi'}</div>
+            </td>
+            <td class="p-3 border-b border-slate-100 text-center font-bold text-indigo-600 text-sm">
+              ${eventStudentCount}
+            </td>
+            <td class="p-3 border-b border-slate-100 text-xs font-semibold text-slate-700">
+              ${classListText}
+            </td>
+            <td class="p-3 border-b border-slate-100 text-xs font-semibold text-slate-700">
+              ${teacherListText}
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      return `
+        ${renderHeader()}
+        <div class="p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h2 class="text-base font-bold text-slate-800">📊 Etkinlik İstatistik Raporu</h2>
+              <p class="text-xs text-slate-500">İlçe MEM ve Okul Yönetimi Özet Tablosu</p>
+            </div>
+            <button onclick="goBack('classes')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg font-medium transition-colors">← Ana Sayfa</button>
+          </div>
+
+          <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm mb-4">
+            <div class="overflow-x-auto max-h-[55vh]">
+              <table class="w-full text-left border-collapse">
+                <thead class="bg-slate-100 sticky top-0 z-10 border-b border-slate-200">
+                  <tr>
+                    <th class="p-3 font-bold text-xs text-slate-600 uppercase">Etkinlik Adı</th>
+                    <th class="p-3 font-bold text-xs text-slate-600 uppercase text-center">Katılan Öğrenci</th>
+                    <th class="p-3 font-bold text-xs text-slate-600 uppercase">Katılan Sınıflar</th>
+                    <th class="p-3 font-bold text-xs text-slate-600 uppercase">Katılan Öğretmenler</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                  ${data.events.length === 0 ? '<tr><td colspan="4" class="p-6 text-center text-xs text-slate-400">Henüz etkinlik eklenmemiş.</td></tr>' : reportRows}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- EN ALT GENEL TOPLAM ALANI -->
+          <div class="bg-indigo-900 text-white p-4 rounded-xl shadow-lg flex justify-between items-center text-xs md:text-sm">
+            <div>
+              <span class="text-indigo-200 block text-[10px] font-bold uppercase tracking-wider">Toplam Etkinlik Sayısı</span>
+              <span class="text-lg font-black">${data.events.length} Etkinlik</span>
+            </div>
+            <div class="text-right">
+              <span class="text-indigo-200 block text-[10px] font-bold uppercase tracking-wider">Katılımların Toplam Sayısı</span>
+              <span class="text-lg font-black text-emerald-400">${totalStudentParticipations} Öğrenci / Katılım</span>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     function render() {
       const app = document.getElementById('app');
+
+      if (currentStep === 'report' && activeTab === 'social') {
+        app.innerHTML = renderReportPage();
+        return;
+      }
 
       if (activeTab === 'documents') {
         if (!selectedTeacher) {
@@ -373,145 +466,4 @@
                   <div class="p-4 rounded-xl border flex justify-between items-center transition-all ${isCompleted ? 'bg-emerald-50/60 border-emerald-200 text-emerald-900 shadow-sm' : 'bg-white border-slate-200 shadow-sm'}">
                     <div class="flex-1 cursor-pointer pr-3" onclick="selectEvent('${ev.id}')">
                       <div class="flex items-center space-x-2 flex-wrap gap-1">
-                        <span class="font-bold text-sm text-slate-800 hover:text-indigo-600">${ev.name}</span>${isCompleted ? '<span class="bg-emerald-100 text-emerald-700 font-bold text-[10px] px-2 py-0.5 rounded-full">✔️ Tamamlandı</span>' : ''}
-                        ${isClassSpecific ? `<span class="bg-purple-100 text-purple-700 font-bold text-[10px] px-2 py-0.5 rounded-full">🔒 Sadece ${selectedClass}</span>` : ''}
-                      </div>
-                      <p class="text-xs text-slate-500 font-medium mt-0.5">📅 Tarih: ${ev.date || 'Belirtilmedi'}</p>
-                    </div>
-                    <div class="flex items-center space-x-1 border-l border-slate-100 pl-2">
-                      <button onclick="editEventDirectly('${ev.id}')" title="Düzenle" class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors text-xs font-semibold">✏️</button>
-                      <button onclick="deleteEventDirectly('${ev.id}')" title="Sil" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors text-xs font-semibold">🗑️</button>
-                      <button onclick="selectEvent('${ev.id}')" class="ml-1 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs rounded-lg transition-colors">Giriş Yap →</button>
-                    </div>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-          </div>
-        `;
-      } else if (currentStep === 'students') {
-        if (!selectedEventObj) {
-          goBack('events');
-          return;
-        }
-        const studentList = data.students[selectedClass] || [];
-        app.innerHTML = `
-          ${renderHeader()}
-          <div class="p-6">
-            <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-4">
-              <div>
-                <h2 class="text-base font-bold text-slate-800">${selectedEventObj.name}</h2>
-                <p class="text-xs text-slate-500 font-medium">${selectedClass} Sınıfı • Tarih: ${selectedEventObj.date}</p>
-              </div>
-              <button onclick="goBack('events')" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1.5 rounded-lg font-medium transition-colors">← Etkinlikler</button>
-            </div>
-            <div class="space-y-2.5 my-4 max-h-[50vh] overflow-y-auto pr-1">
-              ${studentList.map(st => {
-                const key = `${selectedClass}_${selectedEventObj.name}_${st}`;
-                const val = records[key];
-                return `
-                  <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex flex-col space-y-2">
-                    <span class="font-semibold text-xs text-slate-700 uppercase tracking-wide">${st}</span>
-                    <div class="flex space-x-2">
-                      <button onclick="toggleSelect('${st}', 'katilim')" class="flex-1 py-1.5 text-xs font-bold rounded-lg border transition-all ${val === 'katilim' ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-100'}">Katılım</button>
-                      <button onclick="toggleSelect('${st}', 'performans')" class="flex-1 py-1.5 text-xs font-bold rounded-lg border transition-all ${val === 'performans' ? 'bg-purple-600 text-white border-purple-600 shadow-sm' : 'bg-white text-slate-600 border-slate-300 hover:bg-slate-100'}">Performans</button>
-                    </div>
-                  </div>
-                `;
-              }).join('')}
-            </div>
-            <button onclick="saveData()" class="w-full mt-2 py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/20 transition-all text-sm">Kaydet ve Tamamla</button>
-          </div>
-        `;
-      }
-    }
-
-    async function addNewEvent(targetClass = 'ALL') {
-      isMenuOpen = false;
-      const promptTitle = targetClass === 'ALL' 
-        ? "Tüm Sınıflar İçin Genel Etkinlik Adı Giriniz:" 
-        : `Sadece ${targetClass} Sınıfı İçin Etkinlik Adı Giriniz:`;
-
-      const name = prompt(promptTitle);
-      if (!name || name.trim() === "") return;
-      const date = prompt("Tarih veya Tarih Aralığını Giriniz (Örn: 2 Ekim 2026):", "2 Ekim 2026");
-
-      await window.addDoc(window.collection(window.db, "events"), {
-        name: name.trim(),
-        date: date ? date.trim() : 'Belirtilmedi',
-        targetClass: targetClass,
-        createdAt: Date.now()
-      });
-    }
-
-    async function editEventDirectly(id) {
-      const eventObj = data.events.find(e => e.id === id);
-      if (!eventObj) return;
-
-      const newName = prompt("Etkinlik Adını Düzenleyin:", eventObj.name);
-      if (!newName || newName.trim() === "") return;
-
-      const newDate = prompt("Tarihi Düzenleyin:", eventObj.date || "");
-
-      await window.updateDoc(window.doc(window.db, "events", id), {
-        name: newName.trim(),
-        date: newDate ? newDate.trim() : eventObj.date,
-        createdAt: Date.now()
-      });
-    }
-
-    async function deleteEventDirectly(id) {
-      const eventObj = data.events.find(e => e.id === id);
-      if (!eventObj) return;
-
-      if (confirm(`"${eventObj.name}" etkinliğini silmek istediğinize emin misiniz?`)) {
-        await window.deleteDoc(window.doc(window.db, "events", id));
-      }
-    }
-
-    async function toggleSelect(student, type) {
-      const key = `${selectedClass}_${selectedEventObj.name}_${student}`;
-      const newVal = records[key] === type ? null : type;
-      
-      if (newVal) {
-        await window.setDoc(window.doc(window.db, "records", key), { val: newVal });
-        records[key] = newVal;
-      } else {
-        await window.deleteDoc(window.doc(window.db, "records", key));
-        delete records[key];
-      }
-      render();
-    }
-
-    function showMissingClasses() {
-      isMenuOpen = false;
-      let targetEventObj = selectedEventObj || data.events[0];
-      if (!targetEventObj) return;
-      let uncompletedClasses = data.classes.filter(c => !checkEventCompleted(c, targetEventObj.name));
-      alert(uncompletedClasses.length === 0 ? `"${targetEventObj.name}" için tüm sınıflarda veri girişi başlatılmış! 🎉` : `"${targetEventObj.name}" için Henüz Giriş Yapmayan Sınıflar:\n\n` + uncompletedClasses.map(c => `• ${c} Sınıfı`).join("\n"));
-    }
-
-    function showMissingStudents() {
-      isMenuOpen = false;
-      let targetEventObj = selectedEventObj || data.events[0];
-      if (!targetEventObj) return;
-      let missingList = [];
-      data.classes.forEach(c => {
-        (data.students[c] || []).forEach(st => {
-          if (!records[`${c}_${targetEventObj.name}_${st}`]) missingList.push(`[${c}] ${st}`);
-        });
-      });
-      alert(missingList.length === 0 ? `"${targetEventObj.name}" etkinliği için tüm öğrencilerin girişi tamamlanmış! 🎉` : `"${targetEventObj.name}" için Giriş Yapılmayan Öğrenciler (${missingList.length} Kişi):\n\n` + missingList.join("\n"));
-    }
-
-    function selectClass(c) { selectedClass = c; currentStep = 'events'; saveState(); render(); }
-    function selectEvent(id) { selectedEventId = id; selectedEventObj = data.events.find(e => e.id === id); currentStep = 'students'; saveState(); render(); }
-    function goBack(step) { currentStep = step; saveState(); render(); }
-    function saveData() { alert('Kayıtlar bulut veritabanında saklandı!'); currentStep = 'events'; saveState(); render(); }
-    function checkEventCompleted(sClass, eventName) { return Object.keys(records).some(k => k.startsWith(`${sClass}_${eventName}_`)); }
-
-    initFirebaseListener();
-    render();
-  </script>
-</body>
-</html>
+                        <span class="font-bold
